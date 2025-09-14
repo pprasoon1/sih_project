@@ -1,0 +1,31 @@
+import mongoose from "mongoose";
+
+const reportSchema = new mongoose.Schema(
+  {
+    reporterId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    title: { type: String, required: true },
+    description: String,
+    category: {
+      type: String,
+      enum: ["pothole", "streetlight", "garbage", "water", "tree", "other"],
+      required: true,
+    },
+    location: {
+      type: { type: String, enum: ["Point"], default: "Point" },
+      coordinates: { type: [Number], required: true }, // [lng, lat]
+    },
+    mediaUrls: [String],
+    status: {
+      type: String,
+      enum: ["new", "acknowledged", "in_progress", "resolved"],
+      default: "new",
+    },
+    priority: { type: String, enum: ["low", "medium", "high"], default: "medium" },
+    assignedDept: { type: String },
+  },
+  { timestamps: true }
+);
+
+reportSchema.index({ location: "2dsphere" });
+
+export default mongoose.model("Report", reportSchema);
