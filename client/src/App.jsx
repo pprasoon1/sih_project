@@ -20,7 +20,7 @@ function App() {
         <Route path="/dashboard" element={<CitizenDashboard />} />
         <Route path='/admin' element={<AdminDashboard />} />
         <Route path='/myreports' element={<MyReports />} />
-        {/* Citizen dashboard, admin dashboard, public issues will be added later */}
+
       </Routes>
     </Router>
   )

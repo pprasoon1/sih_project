@@ -64,6 +64,7 @@ const CitizenDashboard = () => {
           Authorization: `Bearer ${userToken}`, // Use token from localStorage
         },
       });
+      console.log(formData)
       console.log("✅ Report created:", res.data);
       alert("Report submitted successfully!");
 

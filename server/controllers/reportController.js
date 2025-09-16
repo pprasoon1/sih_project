@@ -1,3 +1,5 @@
+// controllers/reportController.js
+
 import Report from "../models/Report.js";
 
 export const createReport = async (req, res) => {
@@ -7,7 +9,6 @@ export const createReport = async (req, res) => {
 
     const { title, description, category, coordinates } = req.body;
 
-    // Fix: coordinates from frontend should be JSON string like "[77.1, 28.6]"
     let parsedCoordinates;
     try {
       parsedCoordinates = JSON.parse(coordinates);
@@ -17,7 +18,7 @@ export const createReport = async (req, res) => {
 
     const mediaUrls = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
 
-    const report = await Report.create({
+    const newReport = await Report.create({ // Renamed to newReport for clarity
       reporterId: req.user._id,
       title,
       description,
@@ -25,18 +26,21 @@ export const createReport = async (req, res) => {
       location: { type: "Point", coordinates: parsedCoordinates },
       mediaUrls,
     });
+    
+    // Populate reporter info before emitting, so frontend receives it
+    const reportToEmit = await Report.findById(newReport._id).populate("reporterId", "name email");
 
-    // req.io.emit("reports:new", report);
-    res.status(201).json(report);
+    // Corrected the event name to match the frontend listener
+    req.io.emit("newReport", reportToEmit); 
+
+    res.status(201).json(reportToEmit);
   } catch (error) {
     console.error("❌ Error in createReport:", error.message);
     res.status(500).json({ message: "Error creating report" });
   }
 };
 
-
-
-
+// --- No changes needed for the functions below ---
 export const getMyReports = async (req, res) => {
   const reports = await Report.find({ reporterId: req.user._id });
   res.json(reports);
