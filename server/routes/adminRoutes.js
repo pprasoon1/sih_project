@@ -1,10 +1,14 @@
+// routes/adminRoutes.js
+
 import express from "express";
 import { getAllReports, updateReportStatus } from "../controllers/adminController.js";
-import { protect, adminOnly } from "../middleware/authMiddleware.js";
+import { protect } from "../middleware/authMiddleware.js";
+import admin from "../middleware/adminMiddleware.js";
 
 const router = express.Router();
 
-router.get("/reports", protect, adminOnly, getAllReports);
-router.patch("/reports/:id/status", protect, adminOnly, updateReportStatus);
+// Get all reports - protected and for admins only
+router.get("/reports", protect, admin, getAllReports);
+router.put("/reports/:id/status", protect, admin, updateReportStatus);
 
 export default router;

@@ -5,7 +5,7 @@ import morgan from "morgan";
 import { createServer } from "http";
 // import { Server } from "socket.io";
 import connectDB from "./config/db.js";
-
+import path from "path";
 // Import routes
 import authRoutes from "./routes/authRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
@@ -26,6 +26,7 @@ const httpServer = createServer(app);
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Routes
 app.use("/api/auth", authRoutes);
