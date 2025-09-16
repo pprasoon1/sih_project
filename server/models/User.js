@@ -7,6 +7,11 @@ const userSchema = new mongoose.Schema(
     email: { type: String, unique: true, required: true },
     password: { type: String, required: true },
     role: { type: String, enum: ["citizen", "staff", "admin"], default: "citizen" },
+    department: { // New field
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
+      default: null,
+    },
   },
   { timestamps: true }
 );

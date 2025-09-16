@@ -1,37 +1,51 @@
 // controllers/reportController.js
 
 import Report from "../models/Report.js";
+import cloudinary from "../config/cloudinary.js";
+
+// Helper function to upload a buffer to Cloudinary
+const uploadToCloudinary = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { resource_type: "auto" }, // Automatically detect file type (image, video)
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+    uploadStream.end(buffer);
+  });
+};
+
 
 export const createReport = async (req, res) => {
   try {
-    console.log("📩 Incoming Report:", req.body);
-    console.log("📸 Uploaded Files:", req.files);
-
     const { title, description, category, coordinates } = req.body;
-
-    let parsedCoordinates;
-    try {
-      parsedCoordinates = JSON.parse(coordinates);
-    } catch (err) {
-      return res.status(400).json({ message: "Invalid coordinates format" });
+    
+    // 1. Handle File Uploads to Cloudinary
+    let mediaUrls = [];
+    if (req.files && req.files.length > 0) {
+      // Upload all files in parallel
+      const uploadPromises = req.files.map(file => uploadToCloudinary(file.buffer));
+      const uploadResults = await Promise.all(uploadPromises);
+      mediaUrls = uploadResults.map(result => result.secure_url);
     }
 
-    const mediaUrls = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+    // 2. Parse Coordinates
+    const parsedCoordinates = JSON.parse(coordinates);
 
-    const newReport = await Report.create({ // Renamed to newReport for clarity
+    // 3. Create Report in Database with Cloudinary URLs
+    const report = await Report.create({
       reporterId: req.user._id,
       title,
       description,
       category,
       location: { type: "Point", coordinates: parsedCoordinates },
-      mediaUrls,
+      mediaUrls, // 👈 Use the secure URLs from Cloudinary
     });
-    
-    // Populate reporter info before emitting, so frontend receives it
-    const reportToEmit = await Report.findById(newReport._id).populate("reporterId", "name email");
 
-    // Corrected the event name to match the frontend listener
-    req.io.emit("newReport", reportToEmit); 
+    const reportToEmit = await Report.findById(report._id).populate("reporterId", "name email");
+    req.io.emit("newReport", reportToEmit);
 
     res.status(201).json(reportToEmit);
   } catch (error) {

@@ -21,8 +21,13 @@ const reportSchema = new mongoose.Schema(
       default: "new",
     },
     priority: { type: String, enum: ["low", "medium", "high"], default: "medium" },
-    assignedDept: { type: String },
+    assignedDept: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "Department", // Changed from String to a reference
+      default: null 
+    },
   },
+  
   { timestamps: true }
 );
 

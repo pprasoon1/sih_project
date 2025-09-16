@@ -5,15 +5,16 @@ import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// --- Multer Config for File Uploads ---
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/"); // folder where files will be stored
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname); // unique filename
-  },
-});
+// // --- Multer Config for File Uploads ---
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, "uploads/"); // folder where files will be stored
+//   },
+//   filename: function (req, file, cb) {
+//     cb(null, Date.now() + "-" + file.originalname); // unique filename
+//   },
+// });
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // --- Routes ---
