@@ -1,0 +1,184 @@
+/* src/components/AdminDashboard.css */
+
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto; /* Changed: Removed the top/bottom margin */
+    padding: 2rem;   /* Changed: Use padding instead of margin for top spacing */
+}
+
+.admin-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.admin-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.admin-header p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+}
+
+.admin-map-container {
+    height: 400px;
+    background-color: #e2e8f0; /* Placeholder color */
+    border-radius: 1rem;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    /* Your AdminMap component will fill this container */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.admin-reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.admin-report-card {
+    background: var(--card-background);
+    border-radius: 1rem;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.card-main-info {
+    display: flex;
+    padding: 1.5rem;
+    gap: 1.5rem;
+}
+
+.card-image-container {
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background-color: #f1f5f9;
+}
+
+.card-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.card-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.card-category {
+    font-size: 0.875rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    text-transform: capitalize;
+    margin-bottom: 0.5rem;
+}
+
+.card-description {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.card-meta-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1rem;
+    padding: 0 1.5rem 1.5rem;
+    font-size: 0.875rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.meta-item {
+    color: var(--text-secondary);
+}
+.meta-item strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.card-actions {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background-color: #f8fafc;
+}
+
+.action-select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    background-color: white;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+}
+
+.action-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--shadow-color);
+}
+
+/* Add these styles to the bottom of AdminDashboard.css */
+
+.map-container-style {
+  height: 450px; /* Or any height you prefer */
+  width: 100%;
+  margin-bottom: 2.5rem;
+  border-radius: 1rem;
+  overflow: hidden; /* This is important for the map's rounded corners */
+  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+  border: 1px solid var(--border-color);
+}
+
+.popup-container {
+  width: 180px;
+  font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+.popup-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.popup-text {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 2px 0;
+}
+
+.popup-image {
+  margin-top: 8px;
+  width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}

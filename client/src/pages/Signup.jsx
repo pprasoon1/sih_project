@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import API from "../api/axios";
-import './Signup.css'; // We'll create this next
+import './Form.css';
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -21,53 +21,45 @@ const Signup = () => {
   };
 
   return (
-    <div className="signup-container">
-      <div className="signup-form-container">
-        <h2 className="signup-title">Create Your Account</h2>
+    <div className="form-page-container">
+       <div className="form-card">
+        <h2 className="form-title">Create Account</h2>
+        <p className="form-subtitle">Join us to make your community better.</p>
+        
         {error && <p className="error-message">{error}</p>}
-        <form onSubmit={handleSignup} className="signup-form">
-          <div className="input-group">
-            <input
-              type="text"
-              placeholder="Full Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="form-input"
-              required
-            />
-          </div>
-          <div className="input-group">
-            <input
-              type="email"
-              placeholder="Email Address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="form-input"
-              required
-            />
-          </div>
-          <div className="input-group">
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="form-input"
-              required
-            />
-          </div>
-          <button type="submit" className="submit-button">
+
+        <form onSubmit={handleSignup} className="form-body">
+          <input
+            type="text"
+            placeholder="Full Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="form-input"
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email Address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="form-input"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="form-input"
+            required
+          />
+          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
             Sign Up
           </button>
         </form>
-        <p className="login-link">
+        <p className="form-switch-link">
           Already have an account? <Link to="/login">Login</Link>
         </p>
-      </div>
-      <div className="background-shapes">
-        <div className="shape shape1"></div>
-        <div className="shape shape2"></div>
-        <div className="shape shape3"></div>
       </div>
     </div>
   );
