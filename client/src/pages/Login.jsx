@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import API from "../api/axios";
+import './Login.css';
 
-export default function Login() {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -21,36 +22,49 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <form
-        onSubmit={handleLogin}
-        className="bg-white shadow-md rounded-lg p-6 w-96"
-      >
-        <h2 className="text-2xl font-bold mb-4">Login</h2>
-        {error && <p className="text-red-500">{error}</p>}
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-2 border rounded mb-3"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 border rounded mb-3"
-          required
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white w-full py-2 rounded hover:bg-blue-600"
-        >
-          Login
-        </button>
-      </form>
+    <div className="login-container">
+      <div className="login-form-container">
+        <h2 className="login-title">Login to Your Account</h2>
+        {error && <p className="error-message">{error}</p>}
+        <form onSubmit={handleLogin} className="login-form">
+          <div className="input-group">
+            <input
+              type="email"
+              placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="form-input"
+              required
+            />
+          </div>
+          <div className="input-group">
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="form-input"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="submit-button"
+          >
+            Login
+          </button>
+        </form>
+        <p className="signup-link">
+          Don't have an account? <Link to="/signup">Sign Up</Link>
+        </p>
+      </div>
+      <div className="background-shapes">
+        <div className="shape shape1"></div>
+        <div className="shape shape2"></div>
+        <div className="shape shape3"></div>
+      </div>
     </div>
   );
 }
+
+export default Login;
