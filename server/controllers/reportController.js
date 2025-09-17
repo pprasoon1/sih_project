@@ -1,11 +1,13 @@
 import Report from "../models/Report.js";
+import User from "../models/User.js";
 import cloudinary from "../config/cloudinary.js";
+import { createAndEmitNotification } from '../services/notificationService.js';
 
 // Helper function to upload a buffer to Cloudinary
 const uploadToCloudinary = (buffer) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { resource_type: "auto" }, // Automatically detect file type (image, video)
+      { resource_type: "auto" },
       (error, result) => {
         if (error) reject(error);
         else resolve(result);
@@ -27,7 +29,6 @@ export const createReport = async (req, res) => {
     try {
       parsedCoordinates = JSON.parse(coordinates);
     } catch (err) {
-      // If parsing fails, send a clear 400 Bad Request error
       return res.status(400).json({ message: "Invalid coordinates format. Expected a JSON string like '[lng, lat]'." });
     }
 
@@ -39,7 +40,7 @@ export const createReport = async (req, res) => {
       mediaUrls = uploadResults.map(result => result.secure_url);
     }
 
-    // 3. Create Report in Database with Cloudinary URLs
+    // 3. Create Report in Database
     const report = await Report.create({
       reporterId: req.user._id,
       title,
@@ -50,11 +51,22 @@ export const createReport = async (req, res) => {
     });
 
     const reportToEmit = await Report.findById(report._id).populate("reporterId", "name email");
+
+    // 4. Handle Real-time Events and Notifications
+    // This event is for the live list/map update on the admin dashboard
     req.io.emit("newReport", reportToEmit);
+
+    // This creates persistent notifications for the admin's notification bell
+    const admins = await User.find({ role: 'admin' });
+    const notificationTitle = "New Report Submitted";
+    const notificationBody = `A report "${report.title}" was submitted by ${req.user.name}.`;
+
+    admins.forEach(admin => {
+      createAndEmitNotification(req.io, admin._id, notificationTitle, notificationBody, report._id);
+    });
 
     res.status(201).json(reportToEmit);
   } catch (error) {
-    // This will now only catch unexpected server errors (e.g., database connection issues)
     console.error("❌ Unexpected Error in createReport:", error);
     res.status(500).json({ message: "An unexpected error occurred while creating the report." });
   }
@@ -87,7 +99,7 @@ export const getReportsNearby = async (req, res) => {
             type: "Point", 
             coordinates: [parseFloat(lng), parseFloat(lat)] 
           }, 
-          $maxDistance: 2000 // 2000 meters = 2km
+          $maxDistance: 2000 // 2km
         } 
       },
     });

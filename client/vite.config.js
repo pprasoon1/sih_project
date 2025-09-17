@@ -8,4 +8,13 @@ export default defineConfig({
     tailwindcss(),
     react()
   ],
+  server: {
+    proxy: {
+      // Any request starting with "/api" will be forwarded
+      '/api': {
+        target: 'http://localhost:5001', // Your backend server URL
+        changeOrigin: true, // Recommended for virtual hosted sites
+      },
+    },
+  },
 })

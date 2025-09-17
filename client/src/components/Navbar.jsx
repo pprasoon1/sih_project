@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import NotificationIcon from './NotificationIcon'; // 👈 1. Import the component
 import './Navbar.css';
 
 const Navbar = () => {
@@ -10,7 +11,8 @@ const Navbar = () => {
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
-        navigate('/login');
+        // A full page reload can help clear out any lingering state
+        window.location.href = '/login'; 
     };
 
     return (
@@ -26,7 +28,11 @@ const Navbar = () => {
                 </nav>
                 <div className="navbar-actions">
                     {token ? (
-                        <button onClick={handleLogout} className="btn btn-secondary">Logout</button>
+                        <>
+                            {/* 👇 2. Add the icon here for logged-in users */}
+                            <NotificationIcon /> 
+                            <button onClick={handleLogout} className="btn btn-secondary">Logout</button>
+                        </>
                     ) : (
                         <>
                             <Link to="/login" className="btn-link">Login</Link>

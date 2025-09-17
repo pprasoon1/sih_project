@@ -10,6 +10,7 @@ import path from "path";
 import authRoutes from "./routes/authRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import notificationRoutes from './routes/notificationRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -37,15 +38,23 @@ app.use((req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/admin", adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Socket.IO
 io.on("connection", (socket) => {
   console.log("🔌 New client connected:", socket.id);
 
+  // Listen for a client to join a room based on their user ID
+  socket.on("joinRoom", (userId) => {
+    socket.join(userId);
+    console.log(`User ${socket.id} joined room: ${userId}`);
+  });
+
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);
   });
 });
+
 
 // Error handling
 app.use((err, req, res, next) => {
