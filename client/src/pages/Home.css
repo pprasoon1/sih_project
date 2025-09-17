@@ -1,0 +1,135 @@
+.home-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f0f4f8;
+  overflow: hidden;
+  position: relative;
+}
+
+.home-content {
+  background-color: white;
+  padding: 3rem 4rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  z-index: 1;
+  transform: translateY(-20px);
+  animation: float-up 0.8s ease-out forwards;
+}
+
+@keyframes float-up {
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.logo-container {
+  margin-bottom: 1.5rem;
+}
+
+.logo {
+  color: #4a90e2;
+}
+
+.company-name {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.button-group {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.login-button,
+.signup-button {
+  padding: 0.8rem 2rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-weight: bold;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.login-button {
+  background-color: #4a90e2;
+}
+
+.login-button:hover {
+  background-color: #357abd;
+  transform: translateY(-2px);
+}
+
+.signup-button {
+  background-color: #50e3c2;
+}
+
+.signup-button:hover {
+  background-color: #38c1a5;
+  transform: translateY(-2px);
+}
+
+/* Animated background shapes */
+.background-shapes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.1;
+  animation: move 20s infinite alternate;
+}
+
+.shape1 {
+  width: 200px;
+  height: 200px;
+  background-color: #4a90e2;
+  top: 10%;
+  left: 15%;
+}
+
+.shape2 {
+  width: 150px;
+  height: 150px;
+  background-color: #50e3c2;
+  bottom: 15%;
+  right: 20%;
+  animation-duration: 25s;
+}
+
+.shape3 {
+  width: 100px;
+  height: 100px;
+  background-color: #f5a623;
+  top: 40%;
+  right: 10%;
+  animation-duration: 30s;
+}
+
+@keyframes move {
+  from {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  to {
+    transform: translate(100px, 50px) rotate(360deg);
+  }
+}
