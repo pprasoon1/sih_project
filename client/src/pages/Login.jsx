@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import API from "../api/axios";
+import './Form.css';
 
-export default function Login() {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -21,36 +22,40 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <form
-        onSubmit={handleLogin}
-        className="bg-white shadow-md rounded-lg p-6 w-96"
-      >
-        <h2 className="text-2xl font-bold mb-4">Login</h2>
-        {error && <p className="text-red-500">{error}</p>}
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-2 border rounded mb-3"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 border rounded mb-3"
-          required
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white w-full py-2 rounded hover:bg-blue-600"
-        >
-          Login
-        </button>
-      </form>
+    <div className="form-page-container">
+      <div className="form-card">
+        <h2 className="form-title">Welcome Back</h2>
+        <p className="form-subtitle">Login to continue and see your reports.</p>
+        
+        {error && <p className="error-message">{error}</p>}
+
+        <form onSubmit={handleLogin} className="form-body">
+          <input
+            type="email"
+            placeholder="Email Address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="form-input"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="form-input"
+            required
+          />
+          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
+            Login
+          </button>
+        </form>
+        <p className="form-switch-link">
+          Don't have an account? <Link to="/signup">Sign Up</Link>
+        </p>
+      </div>
     </div>
   );
 }
+
+export default Login;
