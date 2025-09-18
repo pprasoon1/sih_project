@@ -1,51 +1,76 @@
+
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from 'react-hot-toast'; // Import toast for pop-ups
-import { useSocket } from '../context/SocketContext'; // Import our custom hook
+import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { useSocket } from '../context/SocketContext';
 import AdminMap from "./AdminMap";
+import StatCards from './StatCards';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
   const [reports, setReports] = useState([]);
-  const [departments, setDepartments] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const socket = useSocket(); // Use the single, global socket connection
+  const socket = useSocket();
 
-  // Effect for fetching initial data
+  // Effect for fetching initial data once on mount
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      setError("You must be logged in as an admin.");
-      setLoading(false);
-      return;
+        setError("You must be logged in as an admin.");
+        setLoading(false);
+        return;
     }
     const headers = { Authorization: `Bearer ${token}` };
+
     const fetchInitialData = async () => {
       try {
-        const [reportsRes, deptsRes] = await Promise.all([
-          axios.get("http://localhost:5001/api/admin/reports", { headers }),
-          axios.get("http://localhost:5001/api/admin/departments", { headers }),
+        const [reportsRes, statsRes] = await Promise.all([
+          axios.get("https://backend-sih-project-l67a.onrender.com/api/admin/reports", { headers }),
+          axios.get("https://backend-sih-project-l67a.onrender.com/api/analytics/stats", { headers }),
         ]);
         setReports(reportsRes.data);
-        setDepartments(deptsRes.data);
+        setStats(statsRes.data);
       } catch (err) {
+        console.error("❌ Error fetching initial data:", err);
         setError("Could not load dashboard data.");
       } finally {
         setLoading(false);
       }
     };
+
     fetchInitialData();
   }, []);
 
   // Effect for handling WebSocket events
   useEffect(() => {
-    if (!socket) return; // Don't set up listeners until the socket is ready
+    if (!socket) return;
 
     const handleNewReport = (newReport) => {
       console.log("Received new report via socket:", newReport);
       setReports((prevReports) => [newReport, ...prevReports]);
-      // Show a pop-up notification to the admin
+      
+      // --- Start of Fix ---
+      // Safely update stats to prevent crashes
+      setStats(prevStats => {
+        // If stats haven't been loaded yet, do nothing.
+        if (!prevStats) return null;
+
+        // Safely create a new statusCounts object
+        const newStatusCounts = { ...(prevStats.statusCounts || {}) };
+        newStatusCounts.new = (newStatusCounts.new || 0) + 1;
+
+        return {
+          ...prevStats,
+          totalReports: (prevStats.totalReports || 0) + 1,
+          statusCounts: newStatusCounts,
+        };
+      });
+      // --- End of Fix ---
+      
       toast.success(`New report submitted: "${newReport.title}"`);
     };
 
@@ -54,42 +79,9 @@ const AdminDashboard = () => {
     return () => {
       socket.off('newReport', handleNewReport);
     };
-  }, [socket]); // This effect re-runs if the socket connection changes
+  }, [socket]);
 
-  // ... (handleStatusChange and handleAssignDept functions remain the same)
-  const handleStatusChange = async (reportId, newStatus) => {
-    const token = localStorage.getItem("token");
-    try {
-      const res = await axios.put(
-        `http://localhost:5001/api/admin/reports/${reportId}/status`,
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setReports(reports.map((r) => (r._id === reportId ? res.data : r)));
-    } catch (err) {
-      console.error("❌ Error updating status:", err);
-      toast.error("Failed to update status.");
-    }
-  };
-
-  const handleAssignDept = async (reportId, departmentId) => {
-    if (!departmentId) return;
-    const token = localStorage.getItem("token");
-    try {
-      const res = await axios.put(
-        `http://localhost:5001/api/admin/reports/${reportId}/assign`,
-        { departmentId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setReports(reports.map((r) => (r._id === reportId ? res.data : r)));
-      toast.success("Department assigned!");
-    } catch (err) {
-      console.error("❌ Error assigning department:", err);
-      toast.error("Failed to assign department.");
-    }
-  };
-
-  // ... (JSX and other logic remains the same)
+  // ... (rest of the component, getStatusClass, loading/error checks, and JSX remain the same)
   const getStatusClass = (status) => {
     switch (status) {
       case 'new': return 'status-new';
@@ -99,6 +91,8 @@ const AdminDashboard = () => {
       default: return 'status-default';
     }
   };
+  
+ 
   
   if (loading) {
     return (
@@ -119,65 +113,49 @@ const AdminDashboard = () => {
     );
   }
 
-  return (
+ return (
     <div className="admin-container">
         <div className="admin-header">
-            <h1>Admin Dashboard</h1>
-            <p>.</p>
+            <h1>Reports Dashboard</h1>
+            <p>An overview of all submitted civic issues.</p>
         </div>
         
+        <StatCards stats={stats} />
+
         <div className="admin-map-container">
             <AdminMap reports={reports} />
         </div>
 
         <div className="admin-reports-grid">
             {reports.map((report) => (
-                <div key={report._id} className="admin-report-card">
-                    <div className="card-main-info">
-                        <div className="card-image-container">
-                           {report.mediaUrls && report.mediaUrls[0] ? (
-                              <img src={`${report.mediaUrls[0]}`} alt={report.title} />
-                           ) : (
-                              <div className="image-placeholder">No Image</div>
-                           )}
+                <Link to={`/admin/report/${report._id}`} key={report._id} className="admin-report-card-link">
+                    <div className="admin-report-card">
+                        <div className="card-main-info">
+                            <div className="card-image-container">
+                               {report.mediaUrls && report.mediaUrls[0] ? (
+                                  <img src={report.mediaUrls[0]} alt={report.title} />
+                               ) : (
+                                  <div className="image-placeholder">No Image</div>
+                               )}
+                            </div>
+                            <div className="card-details">
+                                <span className={`status-badge ${getStatusClass(report.status)}`}>
+                                    {report.status.replace('_', ' ')}
+                                </span>
+                                <h3 className="card-title">{report.title}</h3>
+                                <p className="card-category">{report.category}</p>
+                            </div>
                         </div>
-                        <div className="card-details">
-                            <span className={`status-badge ${getStatusClass(report.status)}`}>
-                                {report.status.replace('_', ' ')}
-                            </span>
-                            <h3 className="card-title">{report.title}</h3>
-                            <p className="card-category">{report.category}</p>
-                            <p className="card-description">{report.description}</p>
-                        </div>
-                    </div>
-                    <div className="card-meta-info">
-                        <div className="meta-item">
-                            <strong>Reporter:</strong> {report.reporterId?.name || "N/A"}
-                        </div>
-                        <div className="meta-item">
-                            <strong>Date:</strong> {new Date(report.createdAt).toLocaleDateString()}
-                        </div>
-                        <div className="meta-item">
-                            <strong>Assigned To:</strong> {report.assignedDept?.name || 'Unassigned'}
+                        <div className="card-meta-info">
+                            <div className="meta-item">
+                                <strong>Date:</strong> {new Date(report.createdAt).toLocaleDateString()}
+                            </div>
+                            <div className="meta-item">
+                                <strong>Assigned To:</strong> {report.assignedDept?.name || 'Unassigned'}
+                            </div>
                         </div>
                     </div>
-                    <div className="card-actions">
-                         <select value={report.status} onChange={(e) => handleStatusChange(report._id, e.target.value)} className="action-select">
-                            <option value="new">New</option>
-                            <option value="acknowledged">Acknowledge</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="resolved">Resolved</option>
-                        </select>
-                        <select value={report.assignedDept?._id || ""} onChange={(e) => handleAssignDept(report._id, e.target.value)} className="action-select">
-                            <option value="">Assign Department...</option>
-                            {departments.map((dept) => (
-                                <option key={dept._id} value={dept._id}>
-                                    {dept.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
+                </Link>
             ))}
         </div>
     </div>

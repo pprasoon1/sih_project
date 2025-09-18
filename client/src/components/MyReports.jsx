@@ -19,7 +19,7 @@ const MyReports = () => {
       }
 
       try {
-        const res = await axios.get("http://localhost:5001/api/reports/my", {
+        const res = await axios.get("https://backend-sih-project-l67a.onrender.com/api/reports/my", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -80,7 +80,7 @@ const MyReports = () => {
                  {/* Display image if available, otherwise a placeholder */}
                  {report.mediaUrls && report.mediaUrls[0] ? (
                     <img 
-                        src={`http://localhost:5001${report.mediaUrls[0]}`} 
+                        src={`https://backend-sih-project-l67a.onrender.com${report.mediaUrls[0]}`} 
                         alt={report.title} 
                         className="report-image" 
                     />

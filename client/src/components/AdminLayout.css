@@ -1,0 +1,52 @@
+.admin-layout {
+  display: flex;
+  min-height: calc(100vh - 80px); /* Adjust 80px based on your navbar height */
+  background-color: #f8f9fa;
+}
+
+.admin-sidebar {
+  width: 240px;
+  background-color: #ffffff;
+  border-right: 1px solid #dee2e6;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #343a40;
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-nav a {
+  color: #495057;
+  text-decoration: none;
+  padding: 0.8rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar-nav a:hover {
+  background-color: #e9ecef;
+}
+
+.sidebar-nav a.active {
+  background-color: #0d6efd;
+  color: #ffffff;
+}
+
+.admin-main-content {
+  flex-grow: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}

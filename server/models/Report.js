@@ -17,17 +17,13 @@ const reportSchema = new mongoose.Schema(
     mediaUrls: [String],
     status: {
       type: String,
-      enum: ["new", "acknowledged", "in_progress", "resolved"],
+      enum: ["new", "acknowledged", "in_progress", "resolved", "rejected"],
       default: "new",
     },
     priority: { type: String, enum: ["low", "medium", "high"], default: "medium" },
-    assignedDept: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: "Department", // Changed from String to a reference
-      default: null 
-    },
+    assignedDept: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
+    resolvedAt: { type: Date }, // 👈 Added field
   },
-  
   { timestamps: true }
 );
 

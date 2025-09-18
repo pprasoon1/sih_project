@@ -67,7 +67,7 @@ const CitizenDashboard = () => {
 
     try {
       setLoading(true);
-      await axios.post('http://localhost:5001/api/reports', formData, {
+      await axios.post('https://backend-sih-project-l67a.onrender.com/api/reports', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${userToken}`,

@@ -11,6 +11,7 @@ import authRoutes from "./routes/authRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import notificationRoutes from './routes/notificationRoutes.js';
+import analyticsRoutes from './routes/analtyicsRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -39,6 +40,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/admin", adminRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Socket.IO
 io.on("connection", (socket) => {

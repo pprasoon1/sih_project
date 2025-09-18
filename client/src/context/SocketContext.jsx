@@ -15,7 +15,8 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     // Establish the connection when the component mounts
-    const newSocket = io("http://localhost:5001");
+    // const newSocket = io("http://https://backend-sih-project-l67a.onrender.com");
+     const newSocket = io("https://backend-sih-project-l67a.onrender.com");
     setSocket(newSocket);
     console.log("Socket connection established.");
 

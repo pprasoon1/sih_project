@@ -58,7 +58,7 @@ const AdminMap = ({ reports }) => {
                 <p className="popup-text">Status: {report.status}</p>
                 {report.mediaUrls && report.mediaUrls[0] && (
                   <img
-                    src={`http://localhost:5001${report.mediaUrls[0]}`}
+                    src={`https://backend-sih-project-l67a.onrender.com${report.mediaUrls[0]}`}
                     alt={report.title}
                     className="popup-image"
                   />

@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast'; // Import Toaster for pop-ups
+import { Toaster } from 'react-hot-toast';
 import { SocketProvider, useSocket } from './context/SocketContext';
 
-// Import your pages and components
+// Import Pages & Components
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -13,18 +13,28 @@ import MyReports from './components/MyReports';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
-import NotificationHandler from './components/NotificationHandler'; // Import the handler
+import NotificationHandler from './components/NotificationHandler';
+import AdminLayout from './components/AdminLayout';
+import AnalyticsPage from './pages/AnalyticsPage';
+import ReportDetailPage from './pages/ReportDetailPage';
 
 // A helper component to access context hooks after the provider is set up
 const AppContent = () => {
   const socket = useSocket();
-  // NOTE: Assuming you have an auth context or similar to get the user
-  // This is a placeholder for your actual authentication logic.
-  const user = JSON.parse(localStorage.getItem('user')); 
+  // Manage user state properly instead of reading from localStorage on every render
+  const [user, setUser] = useState(null);
 
+  // Effect to load user from localStorage once when the app starts
   useEffect(() => {
-    // If the socket is connected and a user is logged in, join their private room
-    if (socket && user && user._id) {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  // Effect to join the socket room when the user or socket connection is established
+  useEffect(() => {
+    if (socket && user?._id) {
       socket.emit('joinRoom', user._id);
       console.log(`User ${user.name} joining room ${user._id}`);
     }
@@ -36,15 +46,22 @@ const AppContent = () => {
       {user && <NotificationHandler />}
       <Routes>
         <Route element={<Layout />}>
+          {/* Public Routes */}
           <Route path='/' element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+
+          {/* Citizen Protected Routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<CitizenDashboard />} />
             <Route path='/myreports' element={<MyReports />} />
           </Route>
-          <Route element={<AdminRoute />}>
-            <Route path='/admin' element={<AdminDashboard />} />
+
+          {/* Admin Protected Routes with Nested Layout */}
+          <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="analytics" element={<AnalyticsPage />} /> 
+            <Route path="report/:reportId" element={<ReportDetailPage />} />
           </Route>
         </Route>
       </Routes>
@@ -52,7 +69,7 @@ const AppContent = () => {
   );
 };
 
-// The main App component now sets up the providers
+// The main App component sets up all the global providers
 function App() {
   return (
     <SocketProvider>
