@@ -80,7 +80,7 @@ const MyReports = () => {
                  {/* Display image if available, otherwise a placeholder */}
                  {report.mediaUrls && report.mediaUrls[0] ? (
                     <img 
-                        src={`https://backend-sih-project-l67a.onrender.com${report.mediaUrls[0]}`} 
+                        src={report.mediaUrls[0]}
                         alt={report.title} 
                         className="report-image" 
                     />
