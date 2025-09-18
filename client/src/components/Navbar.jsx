@@ -24,7 +24,7 @@ const Navbar = () => {
                 <nav className="navbar-links">
                     {token && <NavLink to="/dashboard">Report an Issue</NavLink>}
                     {token && <NavLink to="/myreports">My Reports</NavLink>}
-                    {token && role === 'admin' && <NavLink to="/admin">Admin Dashboard</NavLink>}
+                    {token && role === 'admin' && <NavLink to="/admin/dashboard">Admin Dashboard</NavLink>}
                 </nav>
                 <div className="navbar-actions">
                     {token ? (
