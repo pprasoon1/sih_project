@@ -25,7 +25,7 @@ const io = new Server(httpServer, {
 });
 
 // Middlewares
-app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 app.use(morgan("dev"));
 // app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
