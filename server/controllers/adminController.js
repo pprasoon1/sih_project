@@ -65,6 +65,14 @@ export const updateReportStatus = async (req, res) => {
     // 👇 Add this block to award points for resolution
     if (status === 'resolved' && report.status !== 'resolved') {
       await User.findByIdAndUpdate(report.reporterId, { $inc: { points: 25 } }); // Award 25 bonus points
+
+        // Check for "Problem Solver" badges
+      const resolvedCount = await Report.countDocuments({ reporterId: report.reporterId, status: 'resolved' });
+      if (resolvedCount === 1) {
+        await User.findByIdAndUpdate(report.reporterId, { $addToSet: { badges: 'problem_solver_1' } });
+      } else if (resolvedCount === 5) {
+        await User.findByIdAndUpdate(report.reporterId, { $addToSet: { badges: 'problem_solver_5' } });
+      }
     }
 
     report.status = status;

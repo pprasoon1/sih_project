@@ -70,6 +70,12 @@ export const createReport = async (req, res) => {
     await User.findByIdAndUpdate(req.user._id, { $inc: { points: 5 } }); // Award 5 points
     toast.success("Report submitted! +5 points"); // This is a placeholder for frontend toast
 
+     // Check for "First Report" badge
+     const reportCount = await Report.countDocuments({ reporterId: req.user._id });
+    if (reportCount === 1) {
+      await User.findByIdAndUpdate(req.user._id, { $addToSet: { badges: 'first_report' } });
+    }
+
     res.status(201).json(reportToEmit);
   } catch (error) {
     console.error("❌ Unexpected Error in createReport:", error);
@@ -159,6 +165,11 @@ export const toggleUpvote = async (req, res) => {
         }
         report.upvoteCount = report.upvotedBy.length;
         await report.save();
+
+         // Check for "Community Voice" badge for the ORIGINAL reporter
+    if (report.upvoteCount === 10) {
+        await User.findByIdAndUpdate(report.reporterId, { $addToSet: { badges: 'community_voice_10' } });
+    }
         res.json(report);
     } catch (error) {
         res.status(500).json({ message: "Error toggling upvote." });

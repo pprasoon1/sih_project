@@ -17,6 +17,9 @@ const userSchema = new mongoose.Schema(
     default: 0,
     index: true // Index for efficient sorting on the leaderboard
   },
+   badges: [{ // 👈 Add this array to store badge IDs
+    type: String,
+  }],
   },
   { timestamps: true }
 );
