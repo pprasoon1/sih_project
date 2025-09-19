@@ -1,25 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaArrowUp, FaComment } from 'react-icons/fa';
+import CommentModal from '../components/CommentModal';
+import './FeedPage.css';
 
-const ReportCard = ({ report, user }) => {
-  const [upvoteCount, setUpvoteCount] = useState(report.upvoteCount);
-  // Check if the current user has upvoted this report
-  const [isUpvoted, setIsUpvoted] = useState(report.upvotedBy.includes(user?._id));
-
-  const handleUpvote = async () => {
-    const token = localStorage.getItem('token');
-    try {
-      const res = await axios.post(`/api/reports/${report._id}/upvote`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      // Update state based on the server's response
-      setUpvoteCount(res.data.upvoteCount);
-      setIsUpvoted(res.data.upvotedBy.includes(user?._id));
-    } catch (error) {
-      console.error("Upvote failed", error);
-    }
-  };
+// A simpler "dumb" component that just displays data
+const ReportCard = ({ report, user, onUpvote, onOpenComments }) => {
+  const isUpvoted = report.upvotedBy.includes(user?._id);
 
   return (
     <div className="report-card">
@@ -28,28 +15,32 @@ const ReportCard = ({ report, user }) => {
         <h3>{report.title}</h3>
         <p>Category: {report.category}</p>
         <div className="report-card-actions">
-          <button onClick={handleUpvote} className={`upvote-btn ${isUpvoted ? 'upvoted' : ''}`}>
-            <FaArrowUp /> {upvoteCount}
+          <button onClick={() => onUpvote(report._id)} className={`upvote-btn ${isUpvoted ? 'upvoted' : ''}`}>
+            <FaArrowUp /> {report.upvoteCount}
           </button>
-          <button className="comment-btn"><FaComment /> Comments</button>
+          <button onClick={() => onOpenComments(report._id)} className="comment-btn">
+            {/* The comment count is now directly from the report prop */}
+            <FaComment /> {report.comments?.length || 0} Comments
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
+// The main "smart" component that manages state and logic
 const FeedPage = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [modalReportId, setModalReportId] = useState(null);
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
-    // Get user's location and fetch feed
     navigator.geolocation.getCurrentPosition(async (position) => {
       const { longitude, latitude } = position.coords;
       const token = localStorage.getItem('token');
       try {
-        const res = await axios.get(`/api/reports/feed?lng=${longitude}&lat=${latitude}`, {
+        const res = await axios.get(`https://backend-sih-project-l67a.onrender.com/api/reports/feed?lng=${longitude}&lat=${latitude}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setReports(res.data);
@@ -61,9 +52,37 @@ const FeedPage = () => {
     }, (error) => {
       console.error("Geolocation error", error);
       setLoading(false);
-      // TODO: Handle case where user denies location access
     });
   }, []);
+
+  const handleUpvote = async (reportId) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await axios.post(`https://backend-sih-project-l67a.onrender.com/api/reports/${reportId}/upvote`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // Find the report in the state and replace it with the updated one from the server
+      setReports(prevReports => 
+        prevReports.map(report => report._id === reportId ? res.data : report)
+      );
+    } catch (error) {
+      console.error("Upvote failed", error);
+    }
+  };
+
+  const handleCommentAdded = (reportId) => {
+    setReports(prevReports =>
+      prevReports.map(report => {
+        if (report._id === reportId) {
+          // Create a new comments array and add a placeholder to increment the length.
+          // This ensures the count updates visually.
+          const newComments = [...(report.comments || []), {}];
+          return { ...report, comments: newComments };
+        }
+        return report;
+      })
+    );
+  };
 
   if (loading) return <div>Loading community feed...</div>;
 
@@ -72,10 +91,25 @@ const FeedPage = () => {
       <h1>Community Feed</h1>
       <div className="feed-grid">
         {reports.map(report => (
-          <ReportCard key={report._id} report={report} user={user} />
+          <ReportCard 
+            key={report._id} 
+            report={report} 
+            user={user}
+            onUpvote={handleUpvote} 
+            onOpenComments={setModalReportId}
+          />
         ))}
       </div>
+
+      {modalReportId && (
+        <CommentModal 
+          reportId={modalReportId} 
+          onClose={() => setModalReportId(null)}
+          onCommentAdded={() => handleCommentAdded(modalReportId)}
+        />
+      )}
     </div>
   );
 };
+
 export default FeedPage;

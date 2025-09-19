@@ -1,0 +1,91 @@
+.feed-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.feed-container h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    color: #212529;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 1rem;
+}
+
+.feed-grid {
+    display: grid;
+    /* Create a responsive grid that fits as many 320px cards as possible */
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+}
+
+.report-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    display: flex;
+    flex-direction: column;
+}
+
+.report-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.report-card-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.report-card-content {
+    padding: 1rem 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.report-card-content h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+}
+
+.report-card-content p {
+    margin: 0 0 1rem 0;
+    color: #6c757d;
+}
+
+.report-card-actions {
+    margin-top: auto; /* Pushes actions to the bottom of the card */
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.upvote-btn, .comment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    border: 1px solid #ced4da;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.upvote-btn:hover, .comment-btn:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.upvote-btn.upvoted {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+}
