@@ -26,6 +26,7 @@ const Navbar = () => {
                     {/* Links visible to everyone */}
                     <NavLink to="/feed">Community Feed</NavLink>
                     <NavLink to="/leaderboard">Leaderboard</NavLink>
+                     <NavLink to="/health-map">Health Map</NavLink> 
 
                     {/* Links visible only when logged in */}
                     {token && <NavLink to="/dashboard">Report an Issue</NavLink>}

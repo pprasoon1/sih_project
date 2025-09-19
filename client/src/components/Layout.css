@@ -1,14 +1,11 @@
-.main-content {
-  /* This makes the main container fill the viewport height, minus the navbar's height */
-  height: calc(100vh - 80px); 
-  
-  /* This pushes the content down so it starts below the fixed navbar */
-  margin-top: 80px; 
-  
-  /* This is the key part: it allows vertical scrolling ONLY when the content is taller than the container */
-  overflow-y: auto; 
-  
-  /* Ensure content appears above the background */
-  position: relative;
-  z-index: 1;
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* 👈 Changed to min-height for flexibility */
+}
+
+.main-content-area {
+  flex-grow: 1;
+  overflow-y: auto; /* 👈 Changed to auto to allow vertical scrolling */
+  display: flex;
 }

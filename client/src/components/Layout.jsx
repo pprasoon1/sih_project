@@ -1,19 +1,19 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import Navbar from './Navbar';
-import './Layout.css'; // Import the new CSS file
+import React from "react";
+import { Outlet } from "react-router-dom";
+import Navbar from "./Navbar";
 
 const Layout = () => {
-    return (
-        <>
-            <div className="animated-background"></div>
-            <Navbar />
-            {/* We've added a class and removed the inline style */}
-            <main className="main-content">
-                <Outlet />
-            </main>
-        </>
-    );
+  return (
+    <div className="flex flex-col h-screen">
+      {/* Navbar stays at top */}
+      <Navbar />
+
+      {/* Scrollable main content */}
+      <main className="flex-1 overflow-y-auto bg-gray-50 p-4">
+        <Outlet />
+      </main>
+    </div>
+  );
 };
 
 export default Layout;
