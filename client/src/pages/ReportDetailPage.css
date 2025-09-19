@@ -109,3 +109,9 @@
 .action-item { margin-bottom: 1rem; }
 .action-item label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
 .action-item select { width: 100%; /* ... */ }
+
+
+.detail-map .leaflet-container {
+    height: 100%;
+    width: 100%;
+}
