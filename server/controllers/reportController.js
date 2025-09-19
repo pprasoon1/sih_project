@@ -83,6 +83,8 @@ export const createReport = async (req, res) => {
   }
 };
 
+
+
 export const getMyReports = async (req, res) => {
   try {
     const reports = await Report.find({ reporterId: req.user._id }).sort({ createdAt: -1 });
@@ -144,7 +146,7 @@ export const getReportsForFeed = async (req, res) => {
 
     res.json(reports);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching report feed." });
+    res.status(500).json({ message: `Error fetching report feed.${error.message}` });
   }
 };
 
