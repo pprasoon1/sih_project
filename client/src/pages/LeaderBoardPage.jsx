@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import './LeaderboardPage.css'; // 👈 Import the CSS file we will create
 
 const LeaderboardPage = () => {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -8,7 +9,8 @@ const LeaderboardPage = () => {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const res = await axios.get('/api/users/leaderboard');
+        // 👇 Use the full, absolute URL to your deployed backend
+        const res = await axios.get('https://backend-sih-project-l67a.onrender.com/api/users/leaderboard');
         setLeaderboard(res.data);
       } catch (error) {
         console.error("Failed to fetch leaderboard", error);
@@ -19,15 +21,26 @@ const LeaderboardPage = () => {
     fetchLeaderboard();
   }, []);
 
-  if (loading) return <div>Loading Leaderboard...</div>;
+  const getRankClass = (index) => {
+    if (index === 0) return 'rank-gold';
+    if (index === 1) return 'rank-silver';
+    if (index === 2) return 'rank-bronze';
+    return '';
+  };
+
+  if (loading) return <div className="leaderboard-container"><h1>Loading Leaderboard...</h1></div>;
 
   return (
     <div className="leaderboard-container">
-      <h1>Top Citizen Reporters</h1>
+      <div className="leaderboard-header">
+        <h1>🏆 Top Citizen Reporters</h1>
+        <p>Ranking the most active members of our community.</p>
+      </div>
       <ol className="leaderboard-list">
         {leaderboard.map((user, index) => (
-          <li key={user._id} className="leaderboard-item">
-            <span className="rank">{index + 1}</span>
+          // Use index as the key since the public leaderboard is a simple, sorted list
+          <li key={index} className={`leaderboard-item ${getRankClass(index)}`}>
+            <span className={`rank ${getRankClass(index)}`}>{index + 1}</span>
             <span className="name">{user.name}</span>
             <span className="points">{user.points} points</span>
           </li>

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { SocketProvider, useSocket } from './context/SocketContext';
 
+
 // Import Pages & Components
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -20,6 +21,10 @@ import ReportDetailPage from './pages/ReportDetailPage';
 import FeedPage from './pages/FeedPage';
 import LeaderboardPage from './pages/LeaderBoardPage'; // Corrected filename suggestion
 import ProfilePage from './pages/ProfilePage';
+import StaffDashboard from './pages/StaffDashboard';
+import ResolveTaskPage from './pages/ResolveTaskPage';
+// Assume you create a StaffRoute component
+import StaffRoute from './components/StaffRoute';
 
 // A helper component to access context hooks after the provider is set up
 const AppContent = () => {
@@ -62,8 +67,14 @@ const AppContent = () => {
           {/* --- Admin Protected Routes with Nested Layout --- */}
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="analytics" element={<AnalyticsPage />} /> 
+            <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="report/:reportId" element={<ReportDetailPage />} />
+          </Route>
+
+          {/* --- STAFF Protected Routes --- */}
+          <Route element={<StaffRoute />}>
+            <Route path="/staff/dashboard" element={<StaffDashboard />} />
+            <Route path="/staff/task/:reportId" element={<ResolveTaskPage />} />
           </Route>
         </Route>
       </Routes>

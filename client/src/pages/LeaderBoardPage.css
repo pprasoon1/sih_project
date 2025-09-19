@@ -1,0 +1,96 @@
+.leaderboard-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.leaderboard-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 1.5rem;
+}
+
+.leaderboard-header h1 {
+    font-size: 2.5rem;
+    color: #212529;
+    margin: 0;
+}
+
+.leaderboard-header p {
+    font-size: 1.1rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+}
+
+.leaderboard-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    transition: transform 0.2s ease-in-out;
+}
+
+.leaderboard-item:hover {
+    transform: scale(1.02);
+}
+
+.leaderboard-item .rank {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #495057;
+    width: 50px;
+}
+
+.leaderboard-item .name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #212529;
+    flex-grow: 1;
+}
+
+.leaderboard-item .points {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #0d6efd;
+}
+
+/* Special styles for Top 3 */
+.leaderboard-item.rank-gold {
+    background-color: #fff9e6;
+    border-color: #ffc107;
+}
+.rank.rank-gold::before {
+    content: '🥇';
+    margin-right: 0.5rem;
+}
+
+.leaderboard-item.rank-silver {
+    background-color: #f8f9fa;
+    border-color: #adb5bd;
+}
+.rank.rank-silver::before {
+    content: '🥈';
+    margin-right: 0.5rem;
+}
+
+.leaderboard-item.rank-bronze {
+    background-color: #fff0e6;
+    border-color: #fd7e14;
+}
+.rank.rank-bronze::before {
+    content: '🥉';
+    margin-right: 0.5rem;
+}

@@ -7,6 +7,8 @@ import {
   getDepartments,
   getReportById,
   escalateReport,
+  assignReportToStaff,
+  createStaff,
 } from "../controllers/adminController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import admin from "../middleware/adminMiddleware.js";
@@ -21,5 +23,8 @@ router.post('/reports/:id/escalate', protect, admin, escalateReport);
 
 router.post("/departments", protect, admin, createDepartment);
 router.get("/departments", protect, admin, getDepartments);
+
+router.post('/staff', protect, admin, createStaff);
+router.put('/reports/:id/assign-staff', protect, admin, assignReportToStaff);
 
 export default router;

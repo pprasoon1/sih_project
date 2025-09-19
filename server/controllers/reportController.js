@@ -68,7 +68,7 @@ export const createReport = async (req, res) => {
 
     // 👇 Add this block to award points for submission
     await User.findByIdAndUpdate(req.user._id, { $inc: { points: 5 } }); // Award 5 points
-    toast.success("Report submitted! +5 points"); // This is a placeholder for frontend toast
+    // toast.success("Report submitted! +5 points"); // This is a placeholder for frontend toast
 
      // Check for "First Report" badge
      const reportCount = await Report.countDocuments({ reporterId: req.user._id });

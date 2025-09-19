@@ -176,3 +176,30 @@ export const getDepartments = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+
+// @desc    Create a new staff member
+export const createStaff = async (req, res) => {
+    const { name, email, password, department } = req.body;
+    try {
+        const userExists = await User.findOne({ email });
+        if (userExists) return res.status(400).json({ message: 'User already exists' });
+
+        const user = await User.create({
+            name, email, password, department,
+            role: 'staff' // Set role to staff
+        });
+        res.status(201).json({ _id: user._id, name: user.name, email: user.email });
+    } catch (error) { res.status(500).json({ message: 'Server Error' }); }
+};
+
+// @desc    Assign a report to a staff member
+export const assignReportToStaff = async (req, res) => {
+    const { staffId } = req.body;
+    const report = await Report.findById(req.params.id);
+    if (!report) return res.status(404).json({ message: "Report not found" });
+
+    report.assignedStaff = staffId;
+    await report.save();
+    // TODO: Create an 'Update' log and send a notification to the staff member
+    res.json({ message: 'Report assigned to staff.' });
+};

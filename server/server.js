@@ -13,6 +13,8 @@ import adminRoutes from "./routes/adminRoutes.js";
 import notificationRoutes from './routes/notificationRoutes.js';
 import analyticsRoutes from './routes/analtyicsRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import staffRoutes from './routes/staffRoutes.js';
+import { scheduleHealthScoreJob } from './services/healthScoreService.js';
 
 dotenv.config();
 connectDB();
@@ -43,6 +45,7 @@ app.use("/api/admin", adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/staff', staffRoutes);
 
 // Socket.IO
 io.on("connection", (socket) => {
@@ -69,4 +72,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5001;
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  scheduleHealthScoreJob();
 });

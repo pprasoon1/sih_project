@@ -124,6 +124,19 @@ const ReportDetailPage = () => {
         <div className="detail-main-content">
           <img src={report.mediaUrls[0]} alt={report.title} className="detail-main-image" />
           <div className="activity-feed">
+            <h3>Before & After</h3>
+    <div className="before-after-gallery">
+        <div className="gallery-item">
+            <h4>Submitted Photo</h4>
+            <img src={report.mediaUrls[0]} alt="Before" />
+        </div>
+        {report.resolvedMediaUrls && report.resolvedMediaUrls.length > 0 && (
+             <div className="gallery-item">
+                <h4>Resolution Photo</h4>
+                <img src={report.resolvedMediaUrls[0]} alt="After" />
+            </div>
+        )}
+    </div>
             <h3>Activity Feed</h3>
             <div className="comments-list">
               {history.map(item => (

@@ -22,7 +22,16 @@ const reportSchema = new mongoose.Schema(
     },
     priority: { type: String, enum: ["low", "medium", "high"], default: "medium" },
     assignedDept: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
+    assignedStaff: { // 👈 Field for specific staff assignment
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User' 
+    },
     resolvedAt: { type: Date }, // 👈 Added field
+    resolvedMediaUrls: [{ type: String }], // 👈 Field for "after" photos
+    resolvedBy: { // 👈 Field for the staff member who resolved it
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     upvotedBy: [{ // Array of users who upvoted
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Alpha I", "healthScore": 85 },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+            [77.51, 28.47], [77.53, 28.47], [77.53, 28.45], [77.51, 28.45], [77.51, 28.47]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Beta II", "healthScore": 45 },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+            [77.48, 28.48], [77.50, 28.48], [77.50, 28.46], [77.48, 28.46], [77.48, 28.48]
+        ]]
+      }
+    }
+  ]
+}
