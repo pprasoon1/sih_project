@@ -22,6 +22,7 @@ const Navbar = () => {
                     CivicVoice
                 </Link>
                 <nav className="navbar-links">
+                    <NavLink to="/feed">Community Feed</NavLink>
                     {token && <NavLink to="/dashboard">Report an Issue</NavLink>}
                     {token && <NavLink to="/myreports">My Reports</NavLink>}
                     {token && role === 'admin' && <NavLink to="/admin/dashboard">Admin Dashboard</NavLink>}

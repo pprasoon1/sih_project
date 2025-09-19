@@ -8,12 +8,15 @@ import { useSocket } from '../context/SocketContext';
 import AdminMap from "./AdminMap";
 import StatCards from './StatCards';
 import './AdminDashboard.css';
+import { FaArrowUp } from "react-icons/fa";
+
 
 const AdminDashboard = () => {
   const [reports, setReports] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortBy, setSortBy] = useState('createdAt');
   const socket = useSocket();
 
   // Effect for fetching initial data once on mount
@@ -44,6 +47,21 @@ const AdminDashboard = () => {
 
     fetchInitialData();
   }, []);
+
+// Update fetchInitialData to include the sortBy parameter
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [reportsRes, statsRes] = await Promise.all([
+          axios.get(`/api/admin/reports?sortBy=${sortBy}`, { headers }),
+          // ... fetch stats
+        ]);
+        setReports(reportsRes.data);
+        // ... set stats
+      } catch(err) { /* ... */ }
+    };
+    fetchInitialData();
+  }, [sortBy]);
 
   // Effect for handling WebSocket events
   useEffect(() => {
@@ -117,6 +135,14 @@ const AdminDashboard = () => {
     <div className="admin-container">
         <div className="admin-header">
             <h1>Reports Dashboard</h1>
+            {/* 👇 Add Sort By dropdown */}
+        <div className="sort-controls">
+          <label>Sort By:</label>
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
+            <option value="createdAt">Newest</option>
+            <option value="upvoteCount">Most Upvoted</option>
+          </select>
+        </div>
             <p>An overview of all submitted civic issues.</p>
         </div>
         
@@ -130,6 +156,10 @@ const AdminDashboard = () => {
             {reports.map((report) => (
                 <Link to={`/admin/report/${report._id}`} key={report._id} className="admin-report-card-link">
                     <div className="admin-report-card">
+                      {/* 👇 Add Upvote count to the card */}
+              <div className="upvote-display">
+                <FaArrowUp /> {report.upvoteCount || 0}
+              </div>
                         <div className="card-main-info">
                             <div className="card-image-container">
                                {report.mediaUrls && report.mediaUrls[0] ? (

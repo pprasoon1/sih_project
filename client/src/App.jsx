@@ -17,6 +17,7 @@ import NotificationHandler from './components/NotificationHandler';
 import AdminLayout from './components/AdminLayout';
 import AnalyticsPage from './pages/AnalyticsPage';
 import ReportDetailPage from './pages/ReportDetailPage';
+import FeedPage from './pages/FeedPage';
 
 // A helper component to access context hooks after the provider is set up
 const AppContent = () => {
@@ -55,6 +56,7 @@ const AppContent = () => {
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<CitizenDashboard />} />
             <Route path='/myreports' element={<MyReports />} />
+            <Route path='/feed' element={<FeedPage />} />
           </Route>
 
           {/* Admin Protected Routes with Nested Layout */}

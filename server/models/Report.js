@@ -23,6 +23,15 @@ const reportSchema = new mongoose.Schema(
     priority: { type: String, enum: ["low", "medium", "high"], default: "medium" },
     assignedDept: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
     resolvedAt: { type: Date }, // 👈 Added field
+    upvotedBy: [{ // Array of users who upvoted
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  upvoteCount: { // Denormalized count for performance
+    type: Number,
+    default: 0,
+    index: true // Add index for faster sorting
+  },
   },
   { timestamps: true }
 );

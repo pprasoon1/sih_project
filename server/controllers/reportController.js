@@ -1,4 +1,5 @@
 import Report from "../models/Report.js";
+import Comment from "../models/Comment.js";
 import User from "../models/User.js";
 import cloudinary from "../config/cloudinary.js";
 import { createAndEmitNotification } from '../services/notificationService.js';
@@ -109,4 +110,81 @@ export const getReportsNearby = async (req, res) => {
     console.error("❌ Error in getReportsNearby:", error);
     res.status(500).json({ message: "Error fetching nearby reports." });
   }
+};
+
+export const getReportsForFeed = async (req, res) => {
+  try {
+    const { lng, lat, radius = 5000, category } = req.query; // Default radius of 5km
+    
+    const filter = {};
+    if (category) filter.category = category;
+
+    const reports = await Report.find({
+      ...filter,
+      location: {
+        $near: {
+          $geometry: { type: "Point", coordinates: [lng, lat] },
+          $maxDistance: parseInt(radius),
+        },
+      },
+    })
+    .populate('reporterId', 'name')
+    .sort({ upvoteCount: -1, createdAt: -1 }) // Prioritize by upvotes, then recency
+    .limit(50);
+
+    res.json(reports);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching report feed." });
+  }
+};
+
+// @desc    Upvote or remove upvote from a report
+export const toggleUpvote = async (req, res) => {
+    try {
+        const report = await Report.findById(req.params.id);
+        const userId = req.user._id.toString();
+
+        const hasUpvoted = report.upvotedBy.includes(userId);
+
+        if (hasUpvoted) {
+            // Remove upvote
+            report.upvotedBy.pull(userId);
+        } else {
+            // Add upvote
+            report.upvotedBy.push(userId);
+        }
+        report.upvoteCount = report.upvotedBy.length;
+        await report.save();
+        res.json(report);
+    } catch (error) {
+        res.status(500).json({ message: "Error toggling upvote." });
+    }
+};
+
+// @desc    Add a comment to a report
+export const addComment = async (req, res) => {
+    try {
+        const { text } = req.body;
+        const comment = await Comment.create({
+            report: req.params.id,
+            author: req.user._id,
+            text,
+        });
+        const populatedComment = await Comment.findById(comment._id).populate('author', 'name');
+        res.status(201).json(populatedComment);
+    } catch (error) {
+        res.status(500).json({ message: "Error adding comment." });
+    }
+};
+
+// @desc    Get all comments for a report
+export const getComments = async (req, res) => {
+    try {
+        const comments = await Comment.find({ report: req.params.id })
+            .populate('author', 'name')
+            .sort({ createdAt: 'asc' });
+        res.json(comments);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching comments." });
+    }
 };

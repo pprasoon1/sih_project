@@ -6,24 +6,27 @@ import { sendEscalationEmail } from '../config/mailer.js';
 // @desc    Get all reports (with filtering)
 export const getAllReports = async (req, res) => {
   try {
-    const { status, category, priority } = req.query;
+    const { status, category, sortBy = 'createdAt' } = req.query; // 👈 Add sortBy
     const filter = {};
-
     if (status) filter.status = status;
     if (category) filter.category = category;
-    if (priority) filter.priority = priority;
+
+    // Determine sort order. -1 means descending.
+    const sortOrder = sortBy === 'upvoteCount' ? { upvoteCount: -1 } : { createdAt: -1 };
 
     const reports = await Report.find(filter)
       .populate("reporterId", "name email")
       .populate("assignedDept", "name")
-      .sort({ createdAt: -1 });
+      .sort(sortOrder);
 
     res.json(reports);
-  } catch (error) {
+  }
+     catch (error) {
     console.error("❌ Error in getAllReports:", error.message);
     res.status(500).json({ message: "Server Error" });
   }
 };
+
 
 // @desc    Update a report's status
 export const updateReportStatus = async (req, res) => {
