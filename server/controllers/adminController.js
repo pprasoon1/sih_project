@@ -1,17 +1,17 @@
 import Report from "../models/Report.js";
 import Department from "../models/Department.js";
+import Update from '../models/Update.js';
 import { createAndEmitNotification } from '../services/notificationService.js';
-import { sendEscalationEmail } from '../config/mailer.js'; 
+import { sendEscalationEmail } from '../config/mailer.js';
 
 // @desc    Get all reports (with filtering)
 export const getAllReports = async (req, res) => {
   try {
-    const { status, category, sortBy = 'createdAt' } = req.query; // 👈 Add sortBy
+    const { status, category, sortBy = 'createdAt' } = req.query;
     const filter = {};
     if (status) filter.status = status;
     if (category) filter.category = category;
 
-    // Determine sort order. -1 means descending.
     const sortOrder = sortBy === 'upvoteCount' ? { upvoteCount: -1 } : { createdAt: -1 };
 
     const reports = await Report.find(filter)
@@ -20,13 +20,32 @@ export const getAllReports = async (req, res) => {
       .sort(sortOrder);
 
     res.json(reports);
-  }
-     catch (error) {
+  } catch (error) {
     console.error("❌ Error in getAllReports:", error.message);
     res.status(500).json({ message: "Server Error" });
   }
 };
 
+// @desc    Get a single report by ID with its history
+export const getReportById = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id)
+      .populate('reporterId', 'name email')
+      .populate('assignedDept', 'name');
+      
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    
+    const history = await Update.find({ report: req.params.id })
+      .populate('user', 'name')
+      .sort({ createdAt: 'asc' });
+      
+    res.json({ report, history });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
 
 // @desc    Update a report's status
 export const updateReportStatus = async (req, res) => {
@@ -35,11 +54,21 @@ export const updateReportStatus = async (req, res) => {
     const report = await Report.findById(req.params.id);
     if (!report) return res.status(404).json({ message: "Report not found" });
 
-    report.status = status || report.status;
+    const originalStatus = report.status; // 👈 **FIX:** Declare before changing
+    report.status = status;
+
     if (status === 'resolved' && !report.resolvedAt) {
       report.resolvedAt = new Date();
     }
     await report.save();
+    
+    await Update.create({
+      report: report._id,
+      user: req.user._id,
+      changeType: 'status_change',
+      fromValue: originalStatus,
+      toValue: report.status,
+    });
     
     const populatedReport = await Report.findById(report._id).populate('reporterId').populate('assignedDept');
     if (populatedReport.reporterId) {
@@ -55,34 +84,7 @@ export const updateReportStatus = async (req, res) => {
   }
 };
 
-export const getReportById = async (req, res) => {
-  try {
-    const report = await Report.findById(req.params.id)
-      .populate('reporterId', 'name email')
-      .populate('assignedDept', 'name');
-    if (!report) return res.status(404).json({ message: 'Report not found' });
-    res.json(report);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-// @desc    Escalate a report via email
-// @route   POST /api/admin/reports/:id/escalate
-export const escalateReport = async (req, res) => {
-  try {
-    const report = await Report.findById(req.params.id).populate('reporterId', 'name email');
-    if (!report) return res.status(404).json({ message: 'Report not found' });
-
-    await sendEscalationEmail(report, report.reporterId);
-    res.status(200).json({ message: 'Report escalated successfully.' });
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error while escalating report' });
-  }
-};
-
 // @desc    Assign a report to a department
-
 export const assignReportToDept = async (req, res) => {
   try {
     const { departmentId } = req.body;
@@ -94,7 +96,17 @@ export const assignReportToDept = async (req, res) => {
     await report.save();
     
     const populatedReport = await Report.findById(report._id).populate('reporterId').populate('assignedDept');
+    
     if (populatedReport.reporterId && populatedReport.assignedDept) {
+      // Log this action
+      await Update.create({
+        report: report._id,
+        user: req.user._id,
+        changeType: 'assigned',
+        toValue: populatedReport.assignedDept.name,
+      });
+
+      // Send notification
       const { _id, name } = populatedReport.reporterId;
       const deptName = populatedReport.assignedDept.name;
       const title = `Report Assigned: ${populatedReport.title}`;
@@ -108,15 +120,35 @@ export const assignReportToDept = async (req, res) => {
   }
 };
 
+// @desc    Escalate a report via email
+export const escalateReport = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id).populate('reporterId', 'name email');
+    if (!report) return res.status(404).json({ message: 'Report not found' });
+
+    await sendEscalationEmail(report, report.reporterId);
+    
+    // Log this action
+    await Update.create({
+      report: report._id,
+      user: req.user._id,
+      changeType: 'escalated',
+    });
+
+    res.status(200).json({ message: 'Report escalated successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error while escalating report' });
+  }
+};
 
 // @desc    Create a new department
 export const createDepartment = async (req, res) => {
-  const { name, categories } = req.body;
   try {
+    const { name, categories } = req.body;
     const department = await Department.create({ name, categories });
     res.status(201).json(department);
   } catch (error) {
-    res.status(400).json({ message: "Error creating department", error: error.message });
+    res.status(400).json({ message: "Error creating department" });
   }
 };
 
