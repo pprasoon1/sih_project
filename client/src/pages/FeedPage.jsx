@@ -43,6 +43,10 @@ const FeedPage = () => {
         const res = await axios.get(`https://backend-sih-project-l67a.onrender.com/api/reports/feed?lng=${longitude}&lat=${latitude}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        console.log();
+        
+        
+        
         setReports(res.data);
       } catch (error) {
         console.error("Failed to fetch feed", error);

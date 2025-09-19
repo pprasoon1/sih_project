@@ -126,7 +126,7 @@ export const getReportsNearby = async (req, res) => {
 
 export const getReportsForFeed = async (req, res) => {
   try {
-    const { lng, lat, radius = 5000, category } = req.query; // Default radius of 5km
+    const { lng, lat, radius = 20000, category } = req.query; // Default radius of 5km
     
     const filter = {};
     if (category) filter.category = category;
