@@ -1,0 +1,86 @@
+.staff-management-container {
+    padding: 2rem;
+}
+
+.staff-management-container h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+}
+
+.staff-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.staff-form-card, .staff-list-card {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.staff-form-card h2, .staff-list-card h2 {
+    margin-top: 0;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 0.8rem;
+    border: none;
+    background-color: #0d6efd;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-submit:hover {
+    background-color: #0b5ed7;
+}
+
+.staff-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.staff-table th, .staff-table td {
+    padding: 0.8rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.staff-table th {
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.staff-table tbody tr:last-child td {
+    border-bottom: none;
+}

@@ -178,19 +178,19 @@ export const getDepartments = async (req, res) => {
 };
 
 // @desc    Create a new staff member
-export const createStaff = async (req, res) => {
-    const { name, email, password, department } = req.body;
-    try {
-        const userExists = await User.findOne({ email });
-        if (userExists) return res.status(400).json({ message: 'User already exists' });
+// export const createStaff = async (req, res) => {
+//     const { name, email, password, department } = req.body;
+//     try {
+//         const userExists = await User.findOne({ email });
+//         if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-        const user = await User.create({
-            name, email, password, department,
-            role: 'staff' // Set role to staff
-        });
-        res.status(201).json({ _id: user._id, name: user.name, email: user.email });
-    } catch (error) { res.status(500).json({ message: 'Server Error' }); }
-};
+//         const user = await User.create({
+//             name, email, password, department,
+//             role: 'staff' // Set role to staff
+//         });
+//         res.status(201).json({ _id: user._id, name: user.name, email: user.email });
+//     } catch (error) { res.status(500).json({ message: 'Server Error' }); }
+// };
 
 // @desc    Assign a report to a staff member
 export const assignReportToStaff = async (req, res) => {
@@ -202,4 +202,55 @@ export const assignReportToStaff = async (req, res) => {
     await report.save();
     // TODO: Create an 'Update' log and send a notification to the staff member
     res.json({ message: 'Report assigned to staff.' });
+};
+
+// @desc    Create a new staff member
+// @route   POST /api/admin/staff
+// @access  Private/Admin
+export const createStaff = async (req, res) => {
+    const { name, email, password, department } = req.body;
+    try {
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            return res.status(400).json({ message: 'A user with this email already exists' });
+        }
+
+        const user = await User.create({
+            name,
+            email,
+            password,
+            department,
+            role: 'staff' // Explicitly set the role to 'staff'
+        });
+
+        if (user) {
+            res.status(201).json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                department: user.department
+            });
+        } else {
+            res.status(400).json({ message: 'Invalid user data' });
+        }
+    } catch (error) {
+        console.error("❌ Error creating staff:", error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Get all staff members
+// @route   GET /api/admin/staff
+// @access  Private/Admin
+export const getAllStaff = async (req, res) => {
+    try {
+        const staffMembers = await User.find({ role: 'staff' })
+            .populate('department', 'name') // Populate the department's name
+            .select('-password'); // Exclude password from the result
+        res.json(staffMembers);
+    } catch (error) {
+        console.error("❌ Error fetching staff:", error);
+        res.status(500).json({ message: 'Server Error' });
+    }
 };

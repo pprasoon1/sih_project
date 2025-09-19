@@ -25,6 +25,8 @@ import StaffDashboard from './pages/StaffDashboard';
 import ResolveTaskPage from './pages/ResolveTaskPage';
 // Assume you create a StaffRoute component
 import StaffRoute from './components/StaffRoute';
+import HealthMapPage from './pages/HealthMapPage';
+import StaffManagementPage from './pages/StaffManagement';
 
 // A helper component to access context hooks after the provider is set up
 const AppContent = () => {
@@ -55,6 +57,7 @@ const AppContent = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} /> {/* 👈 MOVED HERE */}
+          <Route path= "/health-map" element= {<HealthMapPage />} />
 
           {/* --- Citizen Protected Routes --- */}
           <Route element={<ProtectedRoute />}>
@@ -69,6 +72,7 @@ const AppContent = () => {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="report/:reportId" element={<ReportDetailPage />} />
+             <Route path="staff" element={<StaffManagementPage />} /> 
           </Route>
 
           {/* --- STAFF Protected Routes --- */}

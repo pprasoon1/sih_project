@@ -10,6 +10,7 @@ const AdminLayout = () => {
         <nav className="sidebar-nav">
           <NavLink to="/admin/dashboard">Dashboard</NavLink>
           <NavLink to="/admin/analytics">Analytics</NavLink>
+          <NavLink to="/admin/staff">Staff Management</NavLink> 
           {/* <NavLink to="/admin/staff">Staff</NavLink> */}
         </nav>
       </aside>
