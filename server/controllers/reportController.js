@@ -124,47 +124,10 @@ export const getReportsNearby = async (req, res) => {
   }
 };
 
-// export const getReportsForFeed = async (req, res) => {
-//   try {
-//     const { lng, lat, radius = 5000, category } = req.query; // Default radius of 5km
-    
-//     const filter = {};
-//     if (category) filter.category = category;
-
-//     const reports = await Report.find({
-//       ...filter,
-//       location: {
-//         $near: {
-//           $geometry: { type: "Point", coordinates: [lng, lat] },
-//           $maxDistance: parseInt(radius),
-//         },
-//       },
-//     })
-//     .populate('reporterId', 'name')
-//     .sort({ upvoteCount: -1, createdAt: -1 }) // Prioritize by upvotes, then recency
-//     .limit(50);
-
-//     res.json(reports);
-//   } catch (error) {
-//     res.status(500).json({ message: `Error fetching report feedddd.${error.message}` });
-//   }
-// };
-
-// @desc    Upvote or remove upvote from a report
 export const getReportsForFeed = async (req, res) => {
   try {
-    let { lng, lat, radius = 5000, category } = req.query; // Default radius 5km
-
-    // Convert lng/lat to numbers
-    lng = parseFloat(lng);
-    lat = parseFloat(lat);
-    radius = parseInt(radius);
-
-    // Validate coordinates
-    if (isNaN(lng) || isNaN(lat)) {
-      return res.status(400).json({ message: "Invalid or missing coordinates" });
-    }
-
+    const { lng, lat, radius = 5000, category } = req.query; // Default radius of 5km
+    
     const filter = {};
     if (category) filter.category = category;
 
@@ -173,22 +136,21 @@ export const getReportsForFeed = async (req, res) => {
       location: {
         $near: {
           $geometry: { type: "Point", coordinates: [lng, lat] },
-          $maxDistance: radius,
+          $maxDistance: parseInt(radius),
         },
       },
     })
-      .populate("reporterId", "name")
-      .sort({ upvoteCount: -1, createdAt: -1 }) // Prioritize by upvotes, then recency
-      .limit(50);
+    .populate('reporterId', 'name')
+    .sort({ upvoteCount: -1, createdAt: -1 }) // Prioritize by upvotes, then recency
+    .limit(50);
 
     res.json(reports);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: `Error fetching report feedddd. ${error.message}` });
+    res.status(500).json({ message: `Error fetching report feedddd.${error.message}` });
   }
 };
 
-
+// @desc    Upvote or remove upvote from a report
 export const toggleUpvote = async (req, res) => {
     try {
         const report = await Report.findById(req.params.id);
