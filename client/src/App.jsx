@@ -18,14 +18,14 @@ import AdminLayout from './components/AdminLayout';
 import AnalyticsPage from './pages/AnalyticsPage';
 import ReportDetailPage from './pages/ReportDetailPage';
 import FeedPage from './pages/FeedPage';
+import LeaderboardPage from './pages/LeaderBoardPage'; // Corrected filename suggestion
+import ProfilePage from './pages/ProfilePage';
 
 // A helper component to access context hooks after the provider is set up
 const AppContent = () => {
   const socket = useSocket();
-  // Manage user state properly instead of reading from localStorage on every render
   const [user, setUser] = useState(null);
 
-  // Effect to load user from localStorage once when the app starts
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -33,7 +33,6 @@ const AppContent = () => {
     }
   }, []);
 
-  // Effect to join the socket room when the user or socket connection is established
   useEffect(() => {
     if (socket && user?._id) {
       socket.emit('joinRoom', user._id);
@@ -43,23 +42,24 @@ const AppContent = () => {
 
   return (
     <>
-      {/* The NotificationHandler will only activate if a user is logged in */}
       {user && <NotificationHandler />}
       <Routes>
         <Route element={<Layout />}>
-          {/* Public Routes */}
+          {/* --- Public Routes --- */}
           <Route path='/' element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} /> {/* 👈 MOVED HERE */}
 
-          {/* Citizen Protected Routes */}
+          {/* --- Citizen Protected Routes --- */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<CitizenDashboard />} />
             <Route path='/myreports' element={<MyReports />} />
             <Route path='/feed' element={<FeedPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Route>
 
-          {/* Admin Protected Routes with Nested Layout */}
+          {/* --- Admin Protected Routes with Nested Layout --- */}
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="analytics" element={<AnalyticsPage />} /> 
@@ -76,7 +76,6 @@ function App() {
   return (
     <SocketProvider>
       <Router>
-        {/* This component is responsible for rendering the pop-up notifications */}
         <Toaster position="top-right" reverseOrder={false} />
         <AppContent />
       </Router>

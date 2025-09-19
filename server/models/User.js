@@ -12,6 +12,11 @@ const userSchema = new mongoose.Schema(
       ref: "Department",
       default: null,
     },
+     points: { // 👈 Add this field
+    type: Number,
+    default: 0,
+    index: true // Index for efficient sorting on the leaderboard
+  },
   },
   { timestamps: true }
 );

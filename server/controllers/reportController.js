@@ -66,6 +66,10 @@ export const createReport = async (req, res) => {
       createAndEmitNotification(req.io, admin._id, notificationTitle, notificationBody, report._id);
     });
 
+    // 👇 Add this block to award points for submission
+    await User.findByIdAndUpdate(req.user._id, { $inc: { points: 5 } }); // Award 5 points
+    toast.success("Report submitted! +5 points"); // This is a placeholder for frontend toast
+
     res.status(201).json(reportToEmit);
   } catch (error) {
     console.error("❌ Unexpected Error in createReport:", error);

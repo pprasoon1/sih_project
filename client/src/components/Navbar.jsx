@@ -1,17 +1,18 @@
 import React from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import NotificationIcon from './NotificationIcon'; // 👈 1. Import the component
+import NotificationIcon from './NotificationIcon';
 import './Navbar.css';
 
 const Navbar = () => {
     const navigate = useNavigate();
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
+    const user = JSON.parse(localStorage.getItem('user'));
 
     const handleLogout = () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('user'); // Also remove user object
         localStorage.removeItem('role');
-        // A full page reload can help clear out any lingering state
         window.location.href = '/login'; 
     };
 
@@ -22,18 +23,27 @@ const Navbar = () => {
                     CivicVoice
                 </Link>
                 <nav className="navbar-links">
+                    {/* Links visible to everyone */}
                     <NavLink to="/feed">Community Feed</NavLink>
+                    <NavLink to="/leaderboard">Leaderboard</NavLink>
+
+                    {/* Links visible only when logged in */}
                     {token && <NavLink to="/dashboard">Report an Issue</NavLink>}
                     {token && <NavLink to="/myreports">My Reports</NavLink>}
-                    {token && role === 'admin' && <NavLink to="/admin/dashboard">Admin Dashboard</NavLink>}
+                    {token && <NavLink to="/profile">My Profile</NavLink>}
+                    
+                    {/* Link visible only to admins */}
+                    {token && role === 'admin' && <NavLink to="/admin/dashboard">Admin</NavLink>}
                 </nav>
                 <div className="navbar-actions">
                     {token ? (
-                        <>
-                            {/* 👇 2. Add the icon here for logged-in users */}
+                        <div className="user-nav-items">
+                            <div className="user-points">
+                                {user?.points || 0} Points
+                            </div>
                             <NotificationIcon /> 
                             <button onClick={handleLogout} className="btn btn-secondary">Logout</button>
-                        </>
+                        </div>
                     ) : (
                         <>
                             <Link to="/login" className="btn-link">Login</Link>

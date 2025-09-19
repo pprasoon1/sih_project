@@ -61,6 +61,13 @@ export const updateReportStatus = async (req, res) => {
       report.resolvedAt = new Date();
     }
     await report.save();
+
+    // 👇 Add this block to award points for resolution
+    if (status === 'resolved' && report.status !== 'resolved') {
+      await User.findByIdAndUpdate(report.reporterId, { $inc: { points: 25 } }); // Award 25 bonus points
+    }
+
+    report.status = status;
     
     await Update.create({
       report: report._id,
