@@ -146,7 +146,7 @@ export const getReportsForFeed = async (req, res) => {
 
     res.json(reports);
   } catch (error) {
-    res.status(500).json({ message: `Error fetching report feed.${error.message}` });
+    res.status(500).json({ message: `Error fetching report feedddd.${error.message}` });
   }
 };
 
