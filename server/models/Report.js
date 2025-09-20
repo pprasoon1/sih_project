@@ -41,6 +41,27 @@ const reportSchema = new mongoose.Schema(
     default: 0,
     index: true // Add index for faster sorting
   },
+  urgency: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'critical'],
+    default: 'medium'
+  },
+  metadata: {
+    confidence: { type: Number, min: 0, max: 1 },
+    processingMethod: { 
+      type: String, 
+      enum: ['manual', 'agentic'], 
+      default: 'manual' 
+    },
+    voiceTranscript: { type: String },
+    analysisResult: { type: String },
+    editHistory: [{
+      field: String,
+      oldValue: mongoose.Schema.Types.Mixed,
+      newValue: mongoose.Schema.Types.Mixed,
+      editedAt: { type: Date, default: Date.now }
+    }]
+  }
   },
   { timestamps: true }
 );

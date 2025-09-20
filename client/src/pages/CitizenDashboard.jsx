@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import ChatReportPage from './ChatReportPage';
 import { FaRobot } from 'react-icons/fa';
 import './CitizenDashboard.css';
+import AgenticReportPage from './AgenticReportPage';
 
 // --- SVG Icon Components ---
 const TitleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
@@ -22,6 +23,9 @@ const CitizenDashboard = () => {
   const [step, setStep] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  // Add state
+const [isAgenticOpen, setIsAgenticOpen] = useState(false);
+
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -93,7 +97,9 @@ const CitizenDashboard = () => {
               <textarea placeholder="Provide details like size, depth, and potential danger..." value={description} onChange={(e) => setDescription(e.target.value)} rows="4" />
             </div>
             <button type="button" onClick={nextStep} className="btn btn-primary" disabled={!title}>Next Step</button>
+
           </div>
+          
         );
       case 2:
         return (
@@ -166,6 +172,20 @@ const CitizenDashboard = () => {
         <FaRobot />
         <span>AI Assistant</span>
       </button>
+
+      <button 
+  className="agentic-fab" 
+  onClick={() => setIsAgenticOpen(true)}
+  title="AI-Powered Report"
+>
+  🤖 Smart Report
+</button>
+
+// Add modal
+<Modal isOpen={isAgenticOpen} onClose={() => setIsAgenticOpen(false)}>
+  <AgenticReportPage />
+</Modal>
+
 
       <Modal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)}>
         <ChatReportPage />

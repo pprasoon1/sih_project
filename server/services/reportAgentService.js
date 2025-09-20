@@ -1,3 +1,4 @@
+// services/reportAgentService.js
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 
@@ -11,107 +12,98 @@ const tools = [
   {
     type: "function",
     function: {
-      name: "get_current_location",
-      description: "Automatically get the user's current GPS location. Call this immediately after processing the photo and description.",
-      parameters: { 
-        type: "object", 
-        properties: {},
-        required: []
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "display_extracted_info",
-      description: "Display the extracted information (title, category, description) to the user with edit options that auto-disappear after 10 seconds.",
+      name: "analyze_inputs",
+      description: "Analyze the provided image and voice transcript to extract civic issue details",
       parameters: {
         type: "object",
         properties: {
-          title: { type: "string", description: "Extracted title for the civic issue" },
-          category: { 
-            type: "string", 
-            enum: ["pothole", "streetlight", "garbage", "water", "tree", "other"],
-            description: "Extracted category of the civic issue"
-          },
-          description: { type: "string", description: "Extracted detailed description" },
-          confidence: { type: "number", description: "Confidence level (0-1) of the extraction" }
+          imageDescription: { type: "string", description: "Description of what's visible in the image" },
+          voiceTranscript: { type: "string", description: "Transcript of the voice input" },
+          location: { 
+            type: "object", 
+            properties: {
+              latitude: { type: "number" },
+              longitude: { type: "number" }
+            }
+          }
         },
-        required: ["title", "category", "description", "confidence"],
-      },
-    },
+        required: ["imageDescription", "voiceTranscript"]
+      }
+    }
   },
   {
     type: "function",
     function: {
-      name: "submit_report",
-      description: "Submits the final report to the database once ALL information, including the mediaUrl, is collected.",
+      name: "extract_report_data",
+      description: "Extract structured report data from the analysis",
       parameters: {
         type: "object",
         properties: {
-          title: { type: "string", description: "A short, descriptive title for the issue." },
+          title: { type: "string", description: "Concise title for the issue" },
+          description: { type: "string", description: "Detailed description of the issue" },
           category: { 
             type: "string", 
             enum: ["pothole", "streetlight", "garbage", "water", "tree", "other"],
             description: "Category of the civic issue"
           },
-          description: { type: "string", description: "A detailed description from the user." },
-          latitude: { type: "number", description: "GPS latitude coordinate" },
-          longitude: { type: "number", description: "GPS longitude coordinate" },
-          mediaUrl: { type: "string", description: "The public URL of the uploaded image from Cloudinary." }
+          urgency: { 
+            type: "string", 
+            enum: ["low", "medium", "high", "critical"],
+            description: "Urgency level of the issue"
+          },
+          confidence: { type: "number", description: "Confidence score (0-1) in the analysis" }
         },
-        required: ["title", "category", "description", "latitude", "longitude", "mediaUrl"],
-      },
-    },
-  },
+        required: ["title", "description", "category", "urgency", "confidence"]
+      }
+    }
+  }
 ];
 
 const modelWithTools = model.bindTools(tools);
 
-export const processChatMessageStream = async (history, sessionData = {}) => {
+export const processInputsAndAnalyze = async (imageDescription, voiceTranscript, location) => {
   try {
-    const systemPrompt = `You are "CivicBot", a smart AI assistant for reporting civic issues. Your goal is to automatically process civic issue reports from photos and user descriptions.
+    const systemPrompt = `You are CivicBot, an AI agent that analyzes civic issues from images and voice descriptions.
 
-NEW WORKFLOW (photo-first approach):
-1. User uploads a photo and provides initial description
-2. IMMEDIATELY call "display_extracted_info" tool with:
-   - Title (short, descriptive based on what you see in the photo)
-   - Category (pothole, streetlight, garbage, water, tree, or other)
-   - Detailed description (combine user input with photo analysis)
-   - Confidence (0.0 to 1.0 based on how clear the issue is)
-3. After displaying info, automatically call "get_current_location" tool
-4. Once location is received, IMMEDIATELY call "submit_report" with ALL required data from session
-5. Confirm successful submission
+Your task is to:
+1. Analyze the image and voice input to understand the civic issue
+2. Extract structured data for a civic report
+3. Categorize the issue appropriately
+4. Assess urgency level
+5. Generate a clear title and detailed description
 
-IMPORTANT RULES:
-- ALWAYS call "display_extracted_info" FIRST when you receive a photo and description
-- When location is received (you see "Location received:" in the conversation), IMMEDIATELY call "submit_report"
-- When calling "submit_report", use the data from the session (title, category, description, latitude, longitude, mediaUrl)
-- Be proactive and automatic - don't ask for confirmation unless user wants to edit
-- Analyze the uploaded photo to understand the civic issue
-- Extract as much information as possible from both photo and user description
-- If user provides additional details, incorporate them into the description
-- Always use the location tool to get GPS coordinates automatically
-- Only ask for user input if information is unclear or missing
-- Be conversational but efficient - minimize back-and-forth
+Available categories:
+- pothole: Road damage, potholes, cracks
+- streetlight: Street lighting issues, broken lights
+- garbage: Waste management, illegal dumping, overflowing bins
+- water: Water leaks, drainage issues, flooding
+- tree: Fallen trees, dangerous branches, vegetation blocking roads
+- other: Any other civic issue
 
-Current session data: ${JSON.stringify(sessionData)}`;
+Urgency levels:
+- low: Minor issues, cosmetic problems
+- medium: Issues that need attention but not immediately dangerous
+- high: Issues that could cause safety problems
+- critical: Immediate safety hazards
 
-    // Build conversation history
+Be thorough in your analysis and provide detailed descriptions that will help authorities understand and address the issue effectively.`;
+
     const messages = [
       new SystemMessage(systemPrompt),
-      ...history.map(msg => 
-        msg.role === 'user' 
-          ? new HumanMessage(msg.content) 
-          : new AIMessage(msg.content)
-      )
+      new HumanMessage(`Please analyze this civic issue:
+      
+Image Description: ${imageDescription}
+Voice Input: ${voiceTranscript}
+Location: ${location ? `${location.latitude}, ${location.longitude}` : 'Not provided'}
+
+Please extract structured report data from this information.`)
     ];
 
     const response = await modelWithTools.invoke(messages);
     return response;
 
   } catch (error) {
-    console.error('Error in processChatMessageStream:', error);
+    console.error('Error in processInputsAndAnalyze:', error);
     throw error;
   }
 };
