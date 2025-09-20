@@ -12,7 +12,7 @@ const tools = [
     type: "function",
     function: {
       name: "get_current_location",
-      description: "Call this tool to request the user's current GPS location from their device.",
+      description: "Automatically get the user's current GPS location. Call this immediately after processing the photo and description.",
       parameters: { 
         type: "object", 
         properties: {},
@@ -23,12 +23,21 @@ const tools = [
   {
     type: "function",
     function: {
-      name: "ask_for_photo",
-      description: "After collecting the text details and location, call this tool to ask the user to upload a photo of the issue.",
-      parameters: { 
-        type: "object", 
-        properties: {},
-        required: []
+      name: "display_extracted_info",
+      description: "Display the extracted information (title, category, description) to the user with edit options that auto-disappear after 10 seconds.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Extracted title for the civic issue" },
+          category: { 
+            type: "string", 
+            enum: ["pothole", "streetlight", "garbage", "water", "tree", "other"],
+            description: "Extracted category of the civic issue"
+          },
+          description: { type: "string", description: "Extracted detailed description" },
+          confidence: { type: "number", description: "Confidence level (0-1) of the extraction" }
+        },
+        required: ["title", "category", "description", "confidence"],
       },
     },
   },
@@ -61,27 +70,27 @@ const modelWithTools = model.bindTools(tools);
 
 export const processChatMessageStream = async (history, sessionData = {}) => {
   try {
-    const systemPrompt = `You are "CivicBot", a friendly AI assistant for reporting civic issues. Your goal is to guide users through the complete process of submitting a civic issue report.
+    const systemPrompt = `You are "CivicBot", a smart AI assistant for reporting civic issues. Your goal is to automatically process civic issue reports from photos and user descriptions.
 
-WORKFLOW STEPS (follow strictly in order):
-1. Greet the user warmly and ask them to describe the civic issue they want to report
-2. From their description, extract and confirm:
-   - Title (short, descriptive)
+NEW WORKFLOW (photo-first approach):
+1. User uploads a photo and provides initial description
+2. Automatically analyze the photo and description to extract:
+   - Title (short, descriptive based on what you see)
    - Category (pothole, streetlight, garbage, water, tree, or other)
-   - Detailed description
-3. Once text details are confirmed, call "get_current_location" tool to get GPS coordinates
-4. After location is obtained, confirm the location with the user
-5. Call "ask_for_photo" tool to request a photo of the issue
-6. After photo is uploaded, call "submit_report" with ALL required data
-7. Confirm successful submission
+   - Detailed description (combine user input with photo analysis)
+3. Automatically get user's current location using "get_current_location" tool
+4. Display all extracted information with edit options that auto-disappear
+5. Call "submit_report" with ALL required data once everything is processed
+6. Confirm successful submission
 
 IMPORTANT RULES:
-- Be conversational and friendly
-- Ask only ONE question at a time
-- Don't proceed to next step until current step is complete
-- Always confirm details with the user before moving forward
-- If category is unclear from description, ask user to choose from the available options
-- Don't ask users to manually type their address - always use the location tool
+- Be proactive and automatic - don't ask for confirmation unless user wants to edit
+- Analyze the uploaded photo to understand the civic issue
+- Extract as much information as possible from both photo and user description
+- If user provides additional details, incorporate them into the description
+- Always use the location tool to get GPS coordinates automatically
+- Only ask for user input if information is unclear or missing
+- Be conversational but efficient - minimize back-and-forth
 
 Current session data: ${JSON.stringify(sessionData)}`;
 

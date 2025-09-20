@@ -1,26 +1,23 @@
-// Updated ChatReportPage.js - Modified handlePhotoUploaded function
+// New Ola-style ChatReportPage with photo-first workflow
 import React, { useState, useEffect, useRef } from 'react';
 import PhotoUploader from '../components/PhotoUploader';
 import './ChatReportPage.css';
 
 const ChatReportPage = () => {
-    const [messages, setMessages] = useState([
-        { 
-            role: 'assistant', 
-            content: "👋 Hello! I'm CivicBot, your AI assistant for reporting civic issues. What problem would you like to report today?" 
-        }
-    ]);
+    const [currentStep, setCurrentStep] = useState('photo_upload'); // photo_upload, processing, editing, location, submitting, completed
     const [input, setInput] = useState('');
     const [isThinking, setIsThinking] = useState(false);
-    const [currentAction, setCurrentAction] = useState(null);
     const [sessionId] = useState(() => Date.now().toString() + Math.random().toString(36).substr(2, 9));
     const [reportStatus, setReportStatus] = useState(null);
+    const [extractedInfo, setExtractedInfo] = useState(null);
+    const [editTimer, setEditTimer] = useState(null);
+    const [showEditOptions, setShowEditOptions] = useState(false);
     const [reportData, setReportData] = useState({
         title: '',
         description: '',
         category: '',
         coordinates: null,
-        files: []
+        mediaUrl: null
     });
     const messagesEndRef = useRef(null);
 
@@ -28,84 +25,27 @@ const ChatReportPage = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    useEffect(scrollToBottom, [messages]);
+    useEffect(scrollToBottom, [currentStep]);
 
-    const sendMessage = async (messageContent) => {
-        if (!messageContent.trim() || isThinking) return;
+    // Auto-hide edit options after 10 seconds
+    useEffect(() => {
+        if (showEditOptions && editTimer) {
+            const timer = setTimeout(() => {
+                setShowEditOptions(false);
+                proceedToNextStep();
+            }, 10000);
+            return () => clearTimeout(timer);
+        }
+    }, [showEditOptions, editTimer]);
 
-        const userMessage = { role: 'user', content: messageContent };
-        setMessages(prev => [...prev, userMessage]);
-        setInput('');
-        setIsThinking(true);
-
-        try {
-            const response = await fetch('/api/chat/message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ 
-                    message: messageContent,
-                    sessionId: sessionId
-                }),
-            });
-
-            const data = await response.json();
-
-            if (data.error) {
-                throw new Error(data.message || 'An error occurred');
-            }
-
-            setMessages(prev => [...prev, { 
-                role: 'assistant', 
-                content: data.message 
-            }]);
-
-            handleAction(data.action, data);
-
-        } catch (error) {
-            console.error("Error sending message:", error);
-            setMessages(prev => [...prev, { 
-                role: 'assistant', 
-                content: "❌ Sorry, I encountered an error. Please try again." 
-            }]);
-        } finally {
-            setIsThinking(false);
+    const proceedToNextStep = async () => {
+        if (currentStep === 'editing' && extractedInfo) {
+            setCurrentStep('location');
+            await getLocation();
         }
     };
 
-    const handleAction = (action, data) => {
-        switch (action) {
-            case 'request_location':
-                setCurrentAction('location');
-                break;
-            case 'request_photo':
-                setCurrentAction('photo');
-                break;
-            case 'report_submitted':
-                setCurrentAction(null);
-                setReportStatus({
-                    success: true,
-                    reportId: data.reportId,
-                    message: "Report successfully submitted!"
-                });
-                setTimeout(() => setReportStatus(null), 10000);
-                break;
-            case 'error':
-                setCurrentAction(null);
-                setReportStatus({
-                    success: false,
-                    message: "There was an error processing your request."
-                });
-                setTimeout(() => setReportStatus(null), 5000);
-                break;
-            default:
-                setCurrentAction(null);
-        }
-    };
-
-    const handleLocationShare = async () => {
+    const getLocation = async () => {
         try {
             setIsThinking(true);
             
@@ -119,7 +59,6 @@ const ChatReportPage = () => {
 
             const { latitude, longitude } = position.coords;
             
-            // Store coordinates for later use
             setReportData(prev => ({
                 ...prev,
                 coordinates: [longitude, latitude]
@@ -144,59 +83,101 @@ const ChatReportPage = () => {
                 throw new Error(data.error);
             }
 
-            setMessages(prev => [
-                ...prev,
-                { role: 'user', content: `📍 Location shared: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}` },
-                { role: 'assistant', content: data.message }
-            ]);
-
-            setCurrentAction(null);
-            
-            if (data.action) {
-                handleAction(data.action, data);
-            }
+            setCurrentStep('submitting');
+            await submitReport();
 
         } catch (error) {
             console.error("Location error:", error);
-            setMessages(prev => [...prev, { 
-                role: 'assistant', 
-                content: "❌ Unable to get your location. You can type your address instead, or try the location button again." 
-            }]);
-            setCurrentAction(null);
+            setReportStatus({
+                success: false,
+                message: "❌ Unable to get your location. Please try again."
+            });
+            setCurrentStep('editing');
         } finally {
             setIsThinking(false);
         }
     };
 
-    // Modified function to handle photo data instead of URL
-    const handlePhotoUploaded = async (photoData) => {
-        if (!photoData || !photoData.file) {
-            setMessages(prev => [...prev, { 
-                role: 'assistant', 
-                content: "❌ Photo selection failed. Please try again." 
-            }]);
+    const submitReport = async () => {
+        try {
+            const response = await fetch('/api/chat/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ 
+                    message: 'Submit the report now',
+                    sessionId: sessionId
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.message || 'An error occurred');
+            }
+
+            if (data.action === 'report_submitted') {
+                setCurrentStep('completed');
+                setReportStatus({
+                    success: true,
+                    reportId: data.reportId,
+                    message: "✅ Report successfully submitted!"
+                });
+            }
+
+        } catch (error) {
+            console.error("Error submitting report:", error);
+            setReportStatus({
+                success: false,
+                message: "❌ Failed to submit report. Please try again."
+            });
+            setCurrentStep('editing');
+        }
+    };
+
+    const handlePhotoWithDescription = async (photoData, description) => {
+        if (!photoData || !photoData.file || !description.trim()) {
+            setReportStatus({
+                success: false,
+                message: "❌ Please upload a photo and provide a description."
+            });
             return;
         }
 
         try {
             setIsThinking(true);
+            setCurrentStep('processing');
 
-            // Store the photo file for later submission
-            setReportData(prev => ({
-                ...prev,
-                files: [photoData.file]
-            }));
+            // Upload photo to Cloudinary first
+            const formData = new FormData();
+            formData.append('media', photoData.file);
 
-            // Instead of sending to a separate photo endpoint, we'll submit the complete report
-            // First, let the chat system know we have the photo
-            const response = await fetch('/api/chat/photo', {
+            const uploadResponse = await fetch('/api/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: formData,
+            });
+
+            const uploadData = await uploadResponse.json();
+
+            if (!uploadResponse.ok) {
+                throw new Error(uploadData.message || 'Failed to upload photo');
+            }
+
+            // Send photo URL and description to AI
+            const response = await fetch('/api/chat/photo-description', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
                 body: JSON.stringify({
-                    mediaUrl: 'photo_ready', // Just a flag to indicate photo is ready
+                    mediaUrl: uploadData.secure_url,
+                    description: description,
                     sessionId: sessionId
                 }),
             });
@@ -207,113 +188,60 @@ const ChatReportPage = () => {
                 throw new Error(data.error);
             }
 
-            setMessages(prev => [
-                ...prev,
-                { role: 'user', content: `📷 Photo selected: ${photoData.name}` },
-                { role: 'assistant', content: data.message }
-            ]);
-
-            // Now submit the complete report using your existing endpoint
-            await submitCompleteReport();
+            if (data.action === 'display_extracted_info') {
+                setExtractedInfo(data.extractedInfo);
+                setReportData(prev => ({
+                    ...prev,
+                    title: data.extractedInfo.title,
+                    category: data.extractedInfo.category,
+                    description: data.extractedInfo.description,
+                    mediaUrl: uploadData.secure_url
+                }));
+                setCurrentStep('editing');
+                setShowEditOptions(true);
+                setEditTimer(Date.now());
+            }
 
         } catch (error) {
-            console.error("Photo processing error:", error);
-            setMessages(prev => [...prev, { 
-                role: 'assistant', 
-                content: "❌ Failed to process photo. Please try uploading again." 
-            }]);
+            console.error("Error processing photo and description:", error);
+            setReportStatus({
+                success: false,
+                message: "❌ Failed to process your photo and description. Please try again."
+            });
+            setCurrentStep('photo_upload');
         } finally {
             setIsThinking(false);
         }
     };
 
-    const submitCompleteReport = async () => {
-        try {
-            // Extract report details from the conversation
-            // You might want to modify this based on how your AI extracts the data
-            const formData = new FormData();
-            
-            // Add text data (you'll need to extract these from your chat session)
-            formData.append('title', reportData.title || 'Civic Issue Report');
-            formData.append('description', reportData.description || 'Report submitted via AI Assistant');
-            formData.append('category', reportData.category || 'other');
-            formData.append('coordinates', JSON.stringify(reportData.coordinates));
-            
-            // Add the photo file
-            if (reportData.files && reportData.files.length > 0) {
-                reportData.files.forEach(file => {
-                    formData.append('media', file);
-                });
-            }
-
-            const response = await fetch('/api/reports', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: formData,
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.message || 'Failed to submit report');
-            }
-
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: `✅ **Report Successfully Submitted!**\n\n**Report ID:** ${result._id}\n**Title:** ${result.title}\n**Category:** ${result.category}\n\nThank you for helping improve our community! You've earned 5 points. 🏆\n\nIs there anything else you'd like to report?`
-            }]);
-
-            setCurrentAction(null);
-            setReportStatus({
-                success: true,
-                reportId: result._id,
-                message: "Report successfully submitted!"
-            });
-
-            // Reset report data
-            setReportData({
-                title: '',
-                description: '',
-                category: '',
-                coordinates: null,
-                files: []
-            });
-
-        } catch (error) {
-            console.error('Error submitting report:', error);
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: '❌ Sorry, there was an error submitting your report. Please try again.'
-            }]);
-        }
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        sendMessage(input);
+    const updateExtractedInfo = (field, value) => {
+        setExtractedInfo(prev => ({
+            ...prev,
+            [field]: value
+        }));
+        setReportData(prev => ({
+            ...prev,
+            [field]: value
+        }));
     };
 
     const startNewReport = () => {
-        setMessages([
-            { 
-                role: 'assistant', 
-                content: "👋 Ready to help with another report! What civic issue would you like to report?" 
-            }
-        ]);
-        setCurrentAction(null);
+        setCurrentStep('photo_upload');
+        setInput('');
+        setExtractedInfo(null);
+        setShowEditOptions(false);
+        setEditTimer(null);
         setReportStatus(null);
         setReportData({
             title: '',
             description: '',
             category: '',
             coordinates: null,
-            files: []
+            mediaUrl: null
         });
     };
 
-    // Rest of your component JSX remains the same...
+
     return (
         <div className="chat-container">
             <div className="chat-header">
@@ -328,93 +256,170 @@ const ChatReportPage = () => {
                 )}
             </div>
 
-            <div className="chat-messages">
-                {messages.map((msg, index) => (
-                    <div key={index} className={`message ${msg.role}`}>
-                        <div className="message-bubble">
-                            {msg.content}
+            <div className="chat-content">
+                {/* Photo Upload Step */}
+                {currentStep === 'photo_upload' && (
+                    <div className="step-container">
+                        <div className="step-header">
+                            <h4>📷 Upload Photo & Describe Issue</h4>
+                            <p>Take a photo of the civic issue and describe what you see</p>
                         </div>
-                        {msg.role === 'user' && (
-                            <div className="message-time">
-                                {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <div className="photo-upload-section">
+                            <PhotoUploader 
+                                onUploadComplete={(photoData) => {
+                                    // Store photo data temporarily
+                                    setReportData(prev => ({ ...prev, photoData }));
+                                }}
+                                disabled={isThinking}
+                            />
+                            <div className="description-input">
+                                <textarea
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    placeholder="Describe the civic issue you see in the photo..."
+                                    disabled={isThinking}
+                                    className="description-textarea"
+                                />
+                                <button 
+                                    onClick={() => handlePhotoWithDescription(reportData.photoData, input)}
+                                    disabled={isThinking || !input.trim() || !reportData.photoData}
+                                    className="process-button"
+                                >
+                                    {isThinking ? '⏳ Processing...' : '🚀 Process Report'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Processing Step */}
+                {currentStep === 'processing' && (
+                    <div className="step-container">
+                        <div className="processing-indicator">
+                            <div className="spinner"></div>
+                            <h4>🔍 Analyzing your photo and description...</h4>
+                            <p>Our AI is extracting details from your submission</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Editing Step */}
+                {currentStep === 'editing' && extractedInfo && (
+                    <div className="step-container">
+                        <div className="step-header">
+                            <h4>📋 Review & Edit Details</h4>
+                            <p>Review the extracted information and make changes if needed</p>
+                        </div>
+                        <div className="extracted-info">
+                            <div className="info-item">
+                                <label>Title:</label>
+                                {showEditOptions ? (
+                                    <input
+                                        type="text"
+                                        value={extractedInfo.title}
+                                        onChange={(e) => updateExtractedInfo('title', e.target.value)}
+                                        className="edit-input"
+                                    />
+                                ) : (
+                                    <span className="info-value">{extractedInfo.title}</span>
+                                )}
+                            </div>
+                            <div className="info-item">
+                                <label>Category:</label>
+                                {showEditOptions ? (
+                                    <select
+                                        value={extractedInfo.category}
+                                        onChange={(e) => updateExtractedInfo('category', e.target.value)}
+                                        className="edit-select"
+                                    >
+                                        <option value="pothole">Pothole</option>
+                                        <option value="streetlight">Streetlight</option>
+                                        <option value="garbage">Garbage</option>
+                                        <option value="water">Water Issue</option>
+                                        <option value="tree">Tree Issue</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                ) : (
+                                    <span className="info-value">{extractedInfo.category}</span>
+                                )}
+                            </div>
+                            <div className="info-item">
+                                <label>Description:</label>
+                                {showEditOptions ? (
+                                    <textarea
+                                        value={extractedInfo.description}
+                                        onChange={(e) => updateExtractedInfo('description', e.target.value)}
+                                        className="edit-textarea"
+                                    />
+                                ) : (
+                                    <span className="info-value">{extractedInfo.description}</span>
+                                )}
+                            </div>
+                            <div className="confidence-indicator">
+                                <span>Confidence: {Math.round(extractedInfo.confidence * 100)}%</span>
+                            </div>
+                        </div>
+                        {showEditOptions && (
+                            <div className="edit-timer">
+                                <div className="timer-bar">
+                                    <div className="timer-progress"></div>
+                                </div>
+                                <p>⏰ Auto-proceeding in 10 seconds...</p>
                             </div>
                         )}
                     </div>
-                ))}
-                
-                {isThinking && (
-                    <div className="message assistant">
-                        <div className="message-bubble typing-indicator">
-                            <span></span><span></span><span></span>
+                )}
+
+                {/* Location Step */}
+                {currentStep === 'location' && (
+                    <div className="step-container">
+                        <div className="step-header">
+                            <h4>📍 Getting Your Location</h4>
+                            <p>Automatically detecting your current location...</p>
+                        </div>
+                        <div className="location-indicator">
+                            <div className="spinner"></div>
+                            <p>Please allow location access when prompted</p>
                         </div>
                     </div>
                 )}
+
+                {/* Submitting Step */}
+                {currentStep === 'submitting' && (
+                    <div className="step-container">
+                        <div className="step-header">
+                            <h4>📤 Submitting Report</h4>
+                            <p>Finalizing your civic issue report...</p>
+                        </div>
+                        <div className="submitting-indicator">
+                            <div className="spinner"></div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Completed Step */}
+                {currentStep === 'completed' && (
+                    <div className="step-container">
+                        <div className="success-section">
+                            <div className="success-icon">✅</div>
+                            <h4>Report Successfully Submitted!</h4>
+                            <p>Thank you for helping improve our community!</p>
+                            {reportStatus?.reportId && (
+                                <div className="report-id">
+                                    Report ID: {reportStatus.reportId}
+                                </div>
+                            )}
+                            <button 
+                                onClick={startNewReport}
+                                className="new-report-btn"
+                            >
+                                📝 Report Another Issue
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 <div ref={messagesEndRef} />
-            </div>
-
-            <div className="chat-input-area">
-                {currentAction === 'location' && (
-                    <div className="action-panel location-panel">
-                        <div className="action-message">
-                            📍 Please share your location to help us identify the issue location
-                        </div>
-                        <button 
-                            onClick={handleLocationShare}
-                            disabled={isThinking}
-                            className="location-button"
-                        >
-                            {isThinking ? 'Getting Location...' : '📍 Share My Location'}
-                        </button>
-                        <small className="action-help">
-                            Or you can type your address in the message box below
-                        </small>
-                    </div>
-                )}
-
-                {currentAction === 'photo' && (
-                    <div className="action-panel photo-panel">
-                        <div className="action-message">
-                            📷 Please upload a photo of the civic issue
-                        </div>
-                        <PhotoUploader 
-                            onUploadComplete={handlePhotoUploaded}
-                            disabled={isThinking}
-                        />
-                    </div>
-                )}
-
-                {reportStatus?.success && (
-                    <div className="action-panel success-panel">
-                        <button 
-                            onClick={startNewReport}
-                            className="new-report-btn"
-                        >
-                            📝 Report Another Issue
-                        </button>
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="chat-input-form">
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder={
-                            currentAction === 'location' ? "Or type your address here..." :
-                            currentAction === 'photo' ? "Use the camera button above or describe if you can't upload..." :
-                            "Describe the civic issue you want to report..."
-                        }
-                        disabled={isThinking}
-                        className="chat-input"
-                    />
-                    <button 
-                        type="submit" 
-                        disabled={isThinking || !input.trim()}
-                        className="send-button"
-                    >
-                        {isThinking ? '⏳' : '📤'}
-                    </button>
-                </form>
             </div>
         </div>
     );

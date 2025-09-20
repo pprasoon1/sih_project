@@ -16,13 +16,14 @@ export const handleChatMessage = async (req, res) => {
 
         // Get or create session data
         let sessionData = sessionStore.get(sessionId) || {
-            step: 'initial',
+            step: 'photo_upload',
             title: null,
             category: null,
             description: null,
             latitude: null,
             longitude: null,
             mediaUrl: null,
+            extractedInfo: null,
             history: []
         };
 
@@ -42,7 +43,7 @@ export const handleChatMessage = async (req, res) => {
             switch (toolCall.name) {
                 case 'get_current_location':
                     sessionData.step = 'awaiting_location';
-                    responseContent += '\n\n📍 Please allow location access when prompted, or click the location button to share your current position.';
+                    responseContent += '\n\n📍 Getting your location automatically...';
                     
                     return res.json({
                         message: responseContent,
@@ -50,14 +51,18 @@ export const handleChatMessage = async (req, res) => {
                         sessionId: sessionId
                     });
 
-                case 'ask_for_photo':
-                    sessionData.step = 'awaiting_photo';
-                    responseContent += '\n\n📷 Please take or upload a clear photo of the issue to help authorities understand the problem better.';
+                case 'display_extracted_info':
+                    const { title, category, description, confidence } = toolCall.args;
+                    sessionData.extractedInfo = { title, category, description, confidence };
+                    sessionData.step = 'info_displayed';
+                    
+                    responseContent = `🔍 **I've analyzed your photo and description:**\n\n**Title:** ${title}\n**Category:** ${category}\n**Description:** ${description}\n\n*Confidence: ${Math.round(confidence * 100)}%*\n\n⏰ You can edit any of these details in the next 10 seconds, or I'll proceed automatically.`;
                     
                     sessionStore.set(sessionId, sessionData);
                     return res.json({
                         message: responseContent,
-                        action: 'request_photo',
+                        action: 'display_extracted_info',
+                        extractedInfo: { title, category, description, confidence },
                         sessionId: sessionId
                     });
 
@@ -170,6 +175,92 @@ export const handleLocationUpdate = async (req, res) => {
     } catch (error) {
         console.error("Error handling location update:", error);
         return res.status(500).json({ error: 'Failed to process location' });
+    }
+};
+
+export const handlePhotoWithDescription = async (req, res) => {
+    try {
+        const { mediaUrl, description, sessionId } = req.body;
+
+        if (!mediaUrl || !sessionId) {
+            return res.status(400).json({ error: 'Photo URL, description, and sessionId are required' });
+        }
+
+        let sessionData = sessionStore.get(sessionId);
+        if (!sessionData) {
+            sessionData = {
+                step: 'photo_upload',
+                title: null,
+                category: null,
+                description: null,
+                latitude: null,
+                longitude: null,
+                mediaUrl: null,
+                extractedInfo: null,
+                history: []
+            };
+        }
+
+        // Update session with photo and description
+        sessionData.mediaUrl = mediaUrl;
+        sessionData.step = 'photo_processed';
+        sessionData.description = description;
+
+        // Add photo and description to history
+        const photoMessage = `📷 Photo uploaded: ${mediaUrl}\n📝 Description: ${description}`;
+        sessionData.history.push({ role: 'user', content: photoMessage });
+
+        // Process with AI to extract information
+        const aiResponse = await processChatMessageStream(sessionData.history, sessionData);
+        
+        let responseContent = aiResponse.content || '';
+        let toolCalls = aiResponse.tool_calls || [];
+
+        // Handle tool calls
+        if (toolCalls && toolCalls.length > 0) {
+            const toolCall = toolCalls[0];
+            
+            switch (toolCall.name) {
+                case 'display_extracted_info':
+                    const { title, category, description: extractedDesc, confidence } = toolCall.args;
+                    sessionData.extractedInfo = { title, category, description: extractedDesc, confidence };
+                    sessionData.step = 'info_displayed';
+                    
+                    responseContent = `🔍 **I've analyzed your photo and description:**\n\n**Title:** ${title}\n**Category:** ${category}\n**Description:** ${extractedDesc}\n\n*Confidence: ${Math.round(confidence * 100)}%*\n\n⏰ You can edit any of these details in the next 10 seconds, or I'll proceed automatically.`;
+                    
+                    sessionStore.set(sessionId, sessionData);
+                    return res.json({
+                        message: responseContent,
+                        action: 'display_extracted_info',
+                        extractedInfo: { title, category, description: extractedDesc, confidence },
+                        sessionId: sessionId
+                    });
+
+                case 'get_current_location':
+                    sessionData.step = 'awaiting_location';
+                    responseContent += '\n\n📍 Getting your location automatically...';
+                    
+                    sessionStore.set(sessionId, sessionData);
+                    return res.json({
+                        message: responseContent,
+                        action: 'request_location',
+                        sessionId: sessionId
+                    });
+            }
+        }
+
+        // Add AI response to history
+        sessionData.history.push({ role: 'assistant', content: responseContent });
+        sessionStore.set(sessionId, sessionData);
+
+        return res.json({
+            message: responseContent,
+            sessionId: sessionId
+        });
+
+    } catch (error) {
+        console.error("Error handling photo with description:", error);
+        return res.status(500).json({ error: 'Failed to process photo and description' });
     }
 };
 
