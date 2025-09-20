@@ -12,6 +12,7 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "@langchain/core": "^0.3.77",
     "@langchain/google-genai": "^0.2.18",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",

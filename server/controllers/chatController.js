@@ -2,56 +2,232 @@ import { processChatMessageStream } from '../services/reportAgentService.js';
 import Report from "../models/Report.js";
 import User from "../models/User.js";
 
+// Store session data (in production, use Redis or similar)
+const sessionStore = new Map();
+
 export const handleChatMessage = async (req, res) => {
     try {
-        const { history } = req.body;
+        const { message, sessionId } = req.body;
         const userId = req.user._id;
 
-        // Set headers for a Server-Sent Events (SSE) stream
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-        res.flushHeaders();
-
-        const stream = await processChatMessageStream(history);
-
-        let toolCalls = [];
-
-        // Iterate over the stream from the AI
-        for await (const chunk of stream) {
-            if (chunk.tool_calls) {
-                toolCalls.push(...(chunk.tool_calls));
-            }
-            if (chunk.content) {
-                res.write(chunk.content);
-            }
+        if (!message || !sessionId) {
+            return res.status(400).json({ error: 'Message and sessionId are required' });
         }
 
-        // After the stream is finished, check if a tool needs to be executed
-        if (toolCalls.length > 0) {
+        // Get or create session data
+        let sessionData = sessionStore.get(sessionId) || {
+            step: 'initial',
+            title: null,
+            category: null,
+            description: null,
+            latitude: null,
+            longitude: null,
+            mediaUrl: null,
+            history: []
+        };
+
+        // Add user message to history
+        sessionData.history.push({ role: 'user', content: message });
+
+        // Process the message with AI
+        const aiResponse = await processChatMessageStream(sessionData.history, sessionData);
+
+        let responseContent = aiResponse.content || '';
+        let toolCalls = aiResponse.tool_calls || [];
+
+        // Handle tool calls
+        if (toolCalls && toolCalls.length > 0) {
             const toolCall = toolCalls[0];
-            if (toolCall.name === "submit_report") {
-                const { title, category, description, latitude, longitude, mediaUrl } = toolCall.args;
-                
-                const report = await Report.create({
-                    title, category, description, reporterId: userId,
-                    location: { type: 'Point', coordinates: [longitude, latitude] },
-                    mediaUrls: [mediaUrl],
-                });
-                await User.findByIdAndUpdate(userId, { $inc: { points: 5 } });
-                
-                res.write(`\nReport submitted with ID: ${report._id}. Thank you for your contribution!`);
-            } else {
-                // For other tools (location, photo), send a special signal to the frontend
-                const toolResponse = JSON.stringify({ tool_calls: toolCalls });
-                res.write(`\n<TOOL_CALL>${toolResponse}</TOOL_CALL>`);
+            
+            switch (toolCall.name) {
+                case 'get_current_location':
+                    sessionData.step = 'awaiting_location';
+                    responseContent += '\n\n📍 Please allow location access when prompted, or click the location button to share your current position.';
+                    
+                    return res.json({
+                        message: responseContent,
+                        action: 'request_location',
+                        sessionId: sessionId
+                    });
+
+                case 'ask_for_photo':
+                    sessionData.step = 'awaiting_photo';
+                    responseContent += '\n\n📷 Please take or upload a clear photo of the issue to help authorities understand the problem better.';
+                    
+                    sessionStore.set(sessionId, sessionData);
+                    return res.json({
+                        message: responseContent,
+                        action: 'request_photo',
+                        sessionId: sessionId
+                    });
+
+                case 'submit_report':
+                    try {
+                        const { title, category, description, latitude, longitude, mediaUrl } = toolCall.args;
+                        
+                        // Validate all required data
+                        if (!title || !category || !description || !latitude || !longitude || !mediaUrl) {
+                            throw new Error('Missing required data for report submission');
+                        }
+
+                        // Create the report
+                        const report = await Report.create({
+                            title,
+                            category,
+                            description,
+                            reporterId: userId,
+                            location: { 
+                                type: 'Point', 
+                                coordinates: [longitude, latitude] 
+                            },
+                            mediaUrls: [mediaUrl],
+                            status: 'pending',
+                            createdAt: new Date()
+                        });
+
+                        // Update user points
+                        await User.findByIdAndUpdate(userId, { 
+                            $inc: { points: 5 } 
+                        });
+
+                        // Clear session data
+                        sessionStore.delete(sessionId);
+
+                        responseContent = `✅ **Report Successfully Submitted!**\n\n**Report ID:** ${report._id}\n**Title:** ${title}\n**Category:** ${category}\n\nThank you for helping improve our community! You've earned 5 points. 🏆\n\nIs there anything else you'd like to report?`;
+
+                        return res.json({
+                            message: responseContent,
+                            action: 'report_submitted',
+                            reportId: report._id,
+                            sessionId: sessionId
+                        });
+
+                    } catch (error) {
+                        console.error('Error submitting report:', error);
+                        responseContent = '❌ Sorry, there was an error submitting your report. Please try again.';
+                        
+                        return res.json({
+                            message: responseContent,
+                            action: 'error',
+                            sessionId: sessionId
+                        });
+                    }
             }
         }
-        
-        res.end(); // End the response stream
+
+        // Add AI response to history
+        sessionData.history.push({ role: 'assistant', content: responseContent });
+        sessionStore.set(sessionId, sessionData);
+
+        return res.json({
+            message: responseContent,
+            sessionId: sessionId
+        });
 
     } catch (error) {
-        console.error("Error in chat stream controller:", error);
-        res.end();
+        console.error("Error in chat message handler:", error);
+        return res.status(500).json({ 
+            error: 'Internal server error',
+            message: 'Sorry, I encountered an error. Please try again.'
+        });
+    }
+};
+
+export const handleLocationUpdate = async (req, res) => {
+    try {
+        const { latitude, longitude, sessionId } = req.body;
+
+        if (!latitude || !longitude || !sessionId) {
+            return res.status(400).json({ error: 'Location data and sessionId are required' });
+        }
+
+        let sessionData = sessionStore.get(sessionId);
+        if (!sessionData) {
+            return res.status(400).json({ error: 'Invalid session' });
+        }
+
+        // Update session with location data
+        sessionData.latitude = latitude;
+        sessionData.longitude = longitude;
+        sessionData.step = 'location_received';
+
+        // Add location confirmation to history
+        const locationMessage = `📍 Location received: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+        sessionData.history.push({ role: 'user', content: locationMessage });
+
+        // Process next step with AI
+        const aiResponse = await processChatMessageStream(sessionData.history, sessionData);
+        const responseContent = aiResponse.content || 'Great! I have your location. Now let\'s get a photo of the issue.';
+
+        sessionData.history.push({ role: 'assistant', content: responseContent });
+        sessionStore.set(sessionId, sessionData);
+
+        return res.json({
+            message: responseContent,
+            sessionId: sessionId
+        });
+
+    } catch (error) {
+        console.error("Error handling location update:", error);
+        return res.status(500).json({ error: 'Failed to process location' });
+    }
+};
+
+export const handlePhotoUpdate = async (req, res) => {
+    try {
+        const { mediaUrl, sessionId } = req.body;
+
+        if (!mediaUrl || !sessionId) {
+            return res.status(400).json({ error: 'Photo URL and sessionId are required' });
+        }
+
+        let sessionData = sessionStore.get(sessionId);
+        if (!sessionData) {
+            return res.status(400).json({ error: 'Invalid session' });
+        }
+
+        // Update session with photo data
+        sessionData.mediaUrl = mediaUrl;
+        sessionData.step = 'photo_received';
+
+        // Add photo confirmation to history
+        const photoMessage = `📷 Photo uploaded successfully`;
+        sessionData.history.push({ role: 'user', content: photoMessage });
+
+        // Process final submission with AI
+        const aiResponse = await processChatMessageStream(sessionData.history, sessionData);
+        
+        // The AI should now call submit_report tool
+        if (aiResponse.tool_calls && aiResponse.tool_calls.length > 0) {
+            const toolCall = aiResponse.tool_calls[0];
+            if (toolCall.name === 'submit_report') {
+                // Handle the submission (this will trigger the submit_report case above)
+                req.body = { 
+                    message: 'Submit the report now', 
+                    sessionId 
+                };
+                return handleChatMessage(req, res);
+            }
+        }
+
+        return res.json({
+            message: 'Photo received! Processing your report...',
+            sessionId: sessionId
+        });
+
+    } catch (error) {
+        console.error("Error handling photo update:", error);
+        return res.status(500).json({ error: 'Failed to process photo' });
+    }
+};
+
+// Clear session data (cleanup endpoint)
+export const clearSession = async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        sessionStore.delete(sessionId);
+        return res.json({ message: 'Session cleared' });
+    } catch (error) {
+        return res.status(500).json({ error: 'Failed to clear session' });
     }
 };
