@@ -1,43 +1,86 @@
+// components/PhotoUploader.jsx
 import React, { useState } from 'react';
-import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import './PhotoUploader.css'; // Create this CSS file
+import './PhotoUploader.css';
 
-const PhotoUploader = ({ onUploadComplete }) => {
+const PhotoUploader = ({ onUploadComplete, disabled }) => {
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState('');
-    const [isUploading, setIsUploading] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
         if (selectedFile) {
+            // Validate file
+            if (!selectedFile.type.startsWith('image/')) {
+                toast.error('Please select an image file');
+                return;
+            }
+            
+            if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
+                toast.error('File size too large. Please select an image under 10MB');
+                return;
+            }
+
             setFile(selectedFile);
             setPreview(URL.createObjectURL(selectedFile));
         }
     };
 
-    const handleUpload = async () => {
-        if (!file) return;
-        setIsUploading(true);
-        const toastId = toast.loading('Uploading photo...');
+    const handleConfirm = async () => {
+        if (!file) {
+            toast.error('Please select a photo first');
+            return;
+        }
+        
+        setIsProcessing(true);
+        const toastId = toast.loading('Processing photo...');
 
         try {
-            const formData = new FormData();
-            formData.append('media', file);
-            // This requires a simple, protected backend endpoint that just uploads a single file
-            // and returns the URL, e.g., POST /api/upload
-            const res = await axios.post('/api/upload', formData, {
-                headers: { 
-                    'Content-Type': 'multipart/form-data',
-                    Authorization: `Bearer ${localStorage.getItem('token')}` 
-                },
-            });
-            toast.success('Upload complete!', { id: toastId });
-            onUploadComplete(res.data.url);
+            // Create a temporary FormData to simulate the file upload
+            // We'll pass the file directly to the parent component
+            // The parent will handle the actual upload via the existing createReport endpoint
+            
+            // Convert file to base64 for preview or pass the file object directly
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                // Pass the file object and preview URL to parent
+                onUploadComplete({
+                    file: file,
+                    preview: preview,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                });
+                
+                toast.success('Photo ready for upload!', { id: toastId });
+                
+                // Clear the preview after a short delay
+                setTimeout(() => {
+                    setPreview('');
+                    setFile(null);
+                    // Clean up the preview URL to prevent memory leaks
+                    if (preview) {
+                        URL.revokeObjectURL(preview);
+                    }
+                }, 1000);
+            };
+            reader.readAsDataURL(file);
+            
         } catch (error) {
-            toast.error('Upload failed.', { id: toastId });
+            console.error('Processing error:', error);
+            toast.error('Failed to process photo. Please try again.', { id: toastId });
+            onUploadComplete(null);
         } finally {
-            setIsUploading(false);
+            setIsProcessing(false);
+        }
+    };
+
+    const clearPhoto = () => {
+        setFile(null);
+        if (preview) {
+            URL.revokeObjectURL(preview);
+            setPreview('');
         }
     };
 
@@ -50,16 +93,41 @@ const PhotoUploader = ({ onUploadComplete }) => {
                 id="photo-input"
                 onChange={handleFileChange} 
                 style={{ display: 'none' }} 
+                disabled={disabled || isProcessing}
             />
+            
             {preview ? (
-                <img src={preview} alt="Preview" className="photo-preview" />
+                <div className="photo-preview-container">
+                    <img src={preview} alt="Preview" className="photo-preview" />
+                    <button 
+                        onClick={clearPhoto} 
+                        className="clear-photo-btn"
+                        type="button"
+                        disabled={isProcessing}
+                    >
+                        ✕
+                    </button>
+                </div>
             ) : (
                 <label htmlFor="photo-input" className="photo-label">
-                    Click to Open Camera or Files
+                    <div className="photo-icon">📷</div>
+                    <span>Click to Open Camera or Files</span>
                 </label>
             )}
-            <button onClick={handleUpload} disabled={!file || isUploading} className="upload-confirm-btn">
-                {isUploading ? 'Uploading...' : 'Confirm Photo'}
+            
+            <button 
+                onClick={handleConfirm} 
+                disabled={!file || isProcessing || disabled} 
+                className="upload-confirm-btn"
+            >
+                {isProcessing ? (
+                    <>
+                        <span className="upload-spinner"></span>
+                        Processing...
+                    </>
+                ) : (
+                    '✓ Confirm Photo'
+                )}
             </button>
         </div>
     );
