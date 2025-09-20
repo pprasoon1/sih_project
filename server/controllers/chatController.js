@@ -213,6 +213,8 @@ export const handlePhotoWithDescription = async (req, res) => {
         // Process with AI to extract information
         const aiResponse = await processChatMessageStream(sessionData.history, sessionData);
         
+        console.log('AI Response:', JSON.stringify(aiResponse, null, 2));
+        
         let responseContent = aiResponse.content || '';
         let toolCalls = aiResponse.tool_calls || [];
 

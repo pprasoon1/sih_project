@@ -176,7 +176,7 @@ const ChatReportPage = () => {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
                 body: JSON.stringify({
-                    mediaUrl: uploadData.secure_url,
+                    mediaUrl: uploadData.url,
                     description: description,
                     sessionId: sessionId
                 }),
@@ -195,7 +195,7 @@ const ChatReportPage = () => {
                     title: data.extractedInfo.title,
                     category: data.extractedInfo.category,
                     description: data.extractedInfo.description,
-                    mediaUrl: uploadData.secure_url
+                    mediaUrl: uploadData.url
                 }));
                 setCurrentStep('editing');
                 setShowEditOptions(true);

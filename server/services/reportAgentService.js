@@ -74,16 +74,17 @@ export const processChatMessageStream = async (history, sessionData = {}) => {
 
 NEW WORKFLOW (photo-first approach):
 1. User uploads a photo and provides initial description
-2. Automatically analyze the photo and description to extract:
-   - Title (short, descriptive based on what you see)
+2. IMMEDIATELY call "display_extracted_info" tool with:
+   - Title (short, descriptive based on what you see in the photo)
    - Category (pothole, streetlight, garbage, water, tree, or other)
    - Detailed description (combine user input with photo analysis)
-3. Automatically get user's current location using "get_current_location" tool
-4. Display all extracted information with edit options that auto-disappear
-5. Call "submit_report" with ALL required data once everything is processed
-6. Confirm successful submission
+   - Confidence (0.0 to 1.0 based on how clear the issue is)
+3. After displaying info, automatically call "get_current_location" tool
+4. Once location is obtained, call "submit_report" with ALL required data
+5. Confirm successful submission
 
 IMPORTANT RULES:
+- ALWAYS call "display_extracted_info" FIRST when you receive a photo and description
 - Be proactive and automatic - don't ask for confirmation unless user wants to edit
 - Analyze the uploaded photo to understand the civic issue
 - Extract as much information as possible from both photo and user description

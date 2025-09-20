@@ -14,6 +14,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import analyticsRoutes from './routes/analtyicsRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import staffRoutes from './routes/staffRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 import { scheduleHealthScoreJob } from './services/healthScoreService.js';
 import chatRoutes from './routes/chatRoutes.js'
 
@@ -47,6 +48,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/upload', uploadRoutes);
 app.use('/api/chat', chatRoutes);
 
 // Socket.IO
