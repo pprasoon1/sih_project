@@ -170,7 +170,70 @@ export const handleLocationUpdate = async (req, res) => {
 
         // Process next step with AI
         const aiResponse = await processChatMessageStream(sessionData.history, sessionData);
-        const responseContent = aiResponse.content || 'Great! I have your location. Now let\'s get a photo of the issue.';
+        
+        console.log('Location update AI response:', JSON.stringify(aiResponse, null, 2));
+        
+        let responseContent = aiResponse.content || 'Great! I have your location. Now submitting your report...';
+        let toolCalls = aiResponse.tool_calls || [];
+
+        // Handle tool calls (like submit_report)
+        if (toolCalls && toolCalls.length > 0) {
+            const toolCall = toolCalls[0];
+            
+            if (toolCall.name === 'submit_report') {
+                // Use session data for submission
+                const title = sessionData.title || sessionData.extractedInfo?.title;
+                const category = sessionData.category || sessionData.extractedInfo?.category;
+                const description = sessionData.description || sessionData.extractedInfo?.description;
+                const mediaUrl = sessionData.mediaUrl;
+                
+                console.log('Submitting report with session data:', { title, category, description, latitude, longitude, mediaUrl });
+                
+                try {
+                    // Create the report
+                    const report = await Report.create({
+                        title,
+                        category,
+                        description,
+                        reporterId: req.user._id,
+                        location: { 
+                            type: 'Point', 
+                            coordinates: [longitude, latitude] 
+                        },
+                        mediaUrls: [mediaUrl],
+                        status: 'pending',
+                        createdAt: new Date()
+                    });
+
+                    // Update user points
+                    await User.findByIdAndUpdate(req.user._id, { 
+                        $inc: { points: 5 } 
+                    });
+
+                    // Clear session data
+                    sessionStore.delete(sessionId);
+
+                    responseContent = `✅ **Report Successfully Submitted!**\n\n**Report ID:** ${report._id}\n**Title:** ${title}\n**Category:** ${category}\n\nThank you for helping improve our community! You've earned 5 points. 🏆\n\nIs there anything else you'd like to report?`;
+
+                    return res.json({
+                        message: responseContent,
+                        action: 'report_submitted',
+                        reportId: report._id,
+                        sessionId: sessionId
+                    });
+
+                } catch (error) {
+                    console.error('Error submitting report from location update:', error);
+                    responseContent = '❌ Sorry, there was an error submitting your report. Please try again.';
+                    
+                    return res.json({
+                        message: responseContent,
+                        action: 'error',
+                        sessionId: sessionId
+                    });
+                }
+            }
+        }
 
         sessionData.history.push({ role: 'assistant', content: responseContent });
         sessionStore.set(sessionId, sessionData);

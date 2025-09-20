@@ -6,6 +6,9 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Tap to spea
     const [transcript, setTranscript] = useState('');
     const [isSupported, setIsSupported] = useState(false);
     const [error, setError] = useState(null);
+    const [retryCount, setRetryCount] = useState(0);
+    const [showTextFallback, setShowTextFallback] = useState(false);
+    const [textInput, setTextInput] = useState('');
     const recognitionRef = useRef(null);
 
     useEffect(() => {
@@ -45,8 +48,39 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Tap to spea
             // Handle errors
             recognitionRef.current.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
-                setError(`Speech recognition error: ${event.error}`);
+                
+                let errorMessage = '';
+                switch (event.error) {
+                    case 'network':
+                        errorMessage = 'Network error. Please check your internet connection and try again.';
+                        break;
+                    case 'not-allowed':
+                        errorMessage = 'Microphone access denied. Please allow microphone access and try again.';
+                        break;
+                    case 'no-speech':
+                        errorMessage = 'No speech detected. Please try speaking again.';
+                        break;
+                    case 'audio-capture':
+                        errorMessage = 'No microphone found. Please check your microphone and try again.';
+                        break;
+                    case 'service-not-allowed':
+                        errorMessage = 'Speech recognition service not allowed. Please try again.';
+                        break;
+                    default:
+                        errorMessage = `Speech recognition error: ${event.error}. Please try again.`;
+                }
+                
+                setError(errorMessage);
                 setIsListening(false);
+                
+                // Auto-retry for network errors (up to 2 times)
+                if (event.error === 'network' && retryCount < 2) {
+                    setTimeout(() => {
+                        setRetryCount(prev => prev + 1);
+                        setError(null);
+                        startListening();
+                    }, 2000);
+                }
             };
 
             // Handle end
@@ -76,7 +110,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Tap to spea
             recognitionRef.current.start();
         } catch (err) {
             console.error('Error starting speech recognition:', err);
-            setError('Failed to start speech recognition');
+            setError('Failed to start speech recognition. Please try again.');
             setIsListening(false);
         }
     };
@@ -139,6 +173,28 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Tap to spea
                     <div className="voice-error">
                         <span>⚠️</span>
                         <p>{error}</p>
+                        <div className="error-actions">
+                            {error.includes('Network error') && retryCount < 2 && (
+                                <button 
+                                    className="retry-button"
+                                    onClick={() => {
+                                        setError(null);
+                                        setRetryCount(prev => prev + 1);
+                                        startListening();
+                                    }}
+                                    type="button"
+                                >
+                                    🔄 Retry
+                                </button>
+                            )}
+                            <button 
+                                className="fallback-button"
+                                onClick={() => setShowTextFallback(true)}
+                                type="button"
+                            >
+                                ✏️ Type Instead
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -146,6 +202,43 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Tap to spea
             <div className="voice-placeholder">
                 {placeholder}
             </div>
+            
+            {/* Text fallback */}
+            {showTextFallback && (
+                <div className="text-fallback">
+                    <textarea
+                        value={textInput}
+                        onChange={(e) => setTextInput(e.target.value)}
+                        placeholder="Type your description here..."
+                        className="text-input"
+                        rows={3}
+                    />
+                    <div className="text-fallback-actions">
+                        <button 
+                            className="submit-text-button"
+                            onClick={() => {
+                                if (textInput.trim() && onTranscript) {
+                                    onTranscript(textInput.trim());
+                                }
+                            }}
+                            disabled={!textInput.trim()}
+                            type="button"
+                        >
+                            ✅ Use This Text
+                        </button>
+                        <button 
+                            className="cancel-text-button"
+                            onClick={() => {
+                                setShowTextFallback(false);
+                                setTextInput('');
+                            }}
+                            type="button"
+                        >
+                            ❌ Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

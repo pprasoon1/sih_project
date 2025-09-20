@@ -31,23 +31,33 @@ const ChatReportPage = () => {
     // Auto-hide edit options after 10 seconds
     useEffect(() => {
         if (showEditOptions && editTimer) {
+            console.log('Starting 10-second timer for auto-progression...');
             const timer = setTimeout(() => {
+                console.log('Timer expired, proceeding to next step...');
                 setShowEditOptions(false);
                 proceedToNextStep();
             }, 10000);
-            return () => clearTimeout(timer);
+            return () => {
+                console.log('Clearing timer...');
+                clearTimeout(timer);
+            };
         }
-    }, [showEditOptions, editTimer]);
+    }, [showEditOptions, editTimer, currentStep, extractedInfo]);
 
     const proceedToNextStep = async () => {
+        console.log('proceedToNextStep called:', { currentStep, extractedInfo: !!extractedInfo });
         if (currentStep === 'editing' && extractedInfo) {
+            console.log('Proceeding from editing to location step...');
             setCurrentStep('location');
             await getLocation();
+        } else {
+            console.log('Cannot proceed - missing conditions:', { currentStep, hasExtractedInfo: !!extractedInfo });
         }
     };
 
     const getLocation = async () => {
         try {
+            console.log('Getting location...');
             setIsThinking(true);
             
             const position = await new Promise((resolve, reject) => {
@@ -59,12 +69,14 @@ const ChatReportPage = () => {
             });
 
             const { latitude, longitude } = position.coords;
+            console.log('Location obtained:', { latitude, longitude });
             
             setReportData(prev => ({
                 ...prev,
                 coordinates: [longitude, latitude]
             }));
 
+            console.log('Sending location to server...');
             const response = await fetch('/api/chat/location', {
                 method: 'POST',
                 headers: {
@@ -79,13 +91,26 @@ const ChatReportPage = () => {
             });
 
             const data = await response.json();
+            console.log('Location response:', data);
 
             if (data.error) {
                 throw new Error(data.error);
             }
 
-            setCurrentStep('submitting');
-            await submitReport();
+            // Check if report was submitted directly in location response
+            if (data.action === 'report_submitted') {
+                console.log('Report submitted successfully via location endpoint!');
+                setCurrentStep('completed');
+                setReportStatus({
+                    success: true,
+                    reportId: data.reportId,
+                    message: "✅ Report successfully submitted!"
+                });
+            } else {
+                console.log('Moving to submitting step...');
+                setCurrentStep('submitting');
+                await submitReport();
+            }
 
         } catch (error) {
             console.error("Location error:", error);
@@ -101,6 +126,7 @@ const ChatReportPage = () => {
 
     const submitReport = async () => {
         try {
+            console.log('Submitting report...');
             const response = await fetch('/api/chat/message', {
                 method: 'POST',
                 headers: {
@@ -114,18 +140,22 @@ const ChatReportPage = () => {
             });
 
             const data = await response.json();
+            console.log('Submit report response:', data);
 
             if (data.error) {
                 throw new Error(data.message || 'An error occurred');
             }
 
             if (data.action === 'report_submitted') {
+                console.log('Report submitted successfully!');
                 setCurrentStep('completed');
                 setReportStatus({
                     success: true,
                     reportId: data.reportId,
                     message: "✅ Report successfully submitted!"
                 });
+            } else {
+                console.log('Unexpected response action:', data.action);
             }
 
         } catch (error) {
