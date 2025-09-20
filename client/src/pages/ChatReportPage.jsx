@@ -1,11 +1,12 @@
 // New Ola-style ChatReportPage with photo-first workflow
 import React, { useState, useEffect, useRef } from 'react';
 import PhotoUploader from '../components/PhotoUploader';
+import VoiceInput from '../components/VoiceInput';
 import './ChatReportPage.css';
 
 const ChatReportPage = () => {
     const [currentStep, setCurrentStep] = useState('photo_upload'); // photo_upload, processing, editing, location, submitting, completed
-    const [input, setInput] = useState('');
+    const [voiceInput, setVoiceInput] = useState('');
     const [isThinking, setIsThinking] = useState(false);
     const [sessionId] = useState(() => Date.now().toString() + Math.random().toString(36).substr(2, 9));
     const [reportStatus, setReportStatus] = useState(null);
@@ -137,11 +138,15 @@ const ChatReportPage = () => {
         }
     };
 
+    const handleVoiceTranscript = (transcript) => {
+        setVoiceInput(transcript);
+    };
+
     const handlePhotoWithDescription = async (photoData, description) => {
         if (!photoData || !photoData.file || !description.trim()) {
             setReportStatus({
                 success: false,
-                message: "❌ Please upload a photo and provide a description."
+                message: "❌ Please upload a photo and provide a voice description."
             });
             return;
         }
@@ -227,7 +232,7 @@ const ChatReportPage = () => {
 
     const startNewReport = () => {
         setCurrentStep('photo_upload');
-        setInput('');
+        setVoiceInput('');
         setExtractedInfo(null);
         setShowEditOptions(false);
         setEditTimer(null);
@@ -262,7 +267,7 @@ const ChatReportPage = () => {
                     <div className="step-container">
                         <div className="step-header">
                             <h4>📷 Upload Photo & Describe Issue</h4>
-                            <p>Take a photo of the civic issue and describe what you see</p>
+                            <p>Take a photo of the civic issue and describe what you see using your voice</p>
                         </div>
                         <div className="photo-upload-section">
                             <PhotoUploader 
@@ -273,16 +278,20 @@ const ChatReportPage = () => {
                                 disabled={isThinking}
                             />
                             <div className="description-input">
-                                <textarea
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    placeholder="Describe the civic issue you see in the photo..."
+                                <VoiceInput
+                                    onTranscript={handleVoiceTranscript}
                                     disabled={isThinking}
-                                    className="description-textarea"
+                                    placeholder="Tap the microphone to describe the civic issue you see in the photo..."
                                 />
+                                {voiceInput && (
+                                    <div className="voice-transcript-display">
+                                        <strong>Your description:</strong>
+                                        <p>"{voiceInput}"</p>
+                                    </div>
+                                )}
                                 <button 
-                                    onClick={() => handlePhotoWithDescription(reportData.photoData, input)}
-                                    disabled={isThinking || !input.trim() || !reportData.photoData}
+                                    onClick={() => handlePhotoWithDescription(reportData.photoData, voiceInput)}
+                                    disabled={isThinking || !voiceInput.trim() || !reportData.photoData}
                                     className="process-button"
                                 >
                                     {isThinking ? '⏳ Processing...' : '🚀 Process Report'}

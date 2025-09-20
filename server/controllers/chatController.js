@@ -68,11 +68,19 @@ export const handleChatMessage = async (req, res) => {
 
                 case 'submit_report':
                     try {
-                        const { title, category, description, latitude, longitude, mediaUrl } = toolCall.args;
+                        // Use session data if tool call args are missing
+                        const title = toolCall.args?.title || sessionData.title || sessionData.extractedInfo?.title;
+                        const category = toolCall.args?.category || sessionData.category || sessionData.extractedInfo?.category;
+                        const description = toolCall.args?.description || sessionData.description || sessionData.extractedInfo?.description;
+                        const latitude = toolCall.args?.latitude || sessionData.latitude;
+                        const longitude = toolCall.args?.longitude || sessionData.longitude;
+                        const mediaUrl = toolCall.args?.mediaUrl || sessionData.mediaUrl;
+                        
+                        console.log('Submit report data:', { title, category, description, latitude, longitude, mediaUrl });
                         
                         // Validate all required data
                         if (!title || !category || !description || !latitude || !longitude || !mediaUrl) {
-                            throw new Error('Missing required data for report submission');
+                            throw new Error(`Missing required data for report submission: ${JSON.stringify({ title, category, description, latitude, longitude, mediaUrl })}`);
                         }
 
                         // Create the report
