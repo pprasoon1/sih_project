@@ -3,12 +3,13 @@ import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import Report from "../models/Report.js";
 import User from "../models/User.js";
 
+// Initialize the AI Model
 const model = new ChatGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_API_KEY,
-  modelName: "gemini-pro",
+  model: "gemini-pro", // 👈 The fix is to change 'modelName' to 'model'
 });
 
-// 1. Define the NEW set of tools
+// Define the "Tools" the AI can use
 const tools = [
   {
     type: "function",
@@ -49,12 +50,11 @@ const tools = [
 
 const modelWithTools = model.bind({ tools });
 
+// Define the Agent's Logic
 export const processChatMessage = async (history, userId) => {
   const userMessage = history.pop();
 
-  // 2. Update the system prompt with new instructions
-  const systemPrompt = `You are "CivicBot", a friendly AI assistant for reporting civic issues. Your goal is to guide the user to provide all necessary details.
-  Follow these steps strictly:
+  const systemPrompt = `You are "CivicBot", a friendly AI assistant for reporting civic issues. Your goal is to guide the user to provide all necessary details. Follow these steps strictly:
   1. Greet the user and ask them to describe the problem.
   2. From their description, infer the title, description, and category. If the category is unclear, ask them to choose.
   3. Once you have the text details, you MUST call the "get_current_location" tool. Do not ask them to type their address.
@@ -71,7 +71,6 @@ export const processChatMessage = async (history, userId) => {
 
   const response = await modelWithTools.invoke(conversation);
   
-  // 3. Check for tool calls and handle the "submit_report" tool
   if (response.tool_calls && response.tool_calls.length > 0) {
     const toolCall = response.tool_calls[0];
     if (toolCall.name === "submit_report") {
@@ -89,7 +88,6 @@ export const processChatMessage = async (history, userId) => {
         isEndOfConversation: true
       };
     } else {
-      // For other tools, just send the tool call to the frontend to handle
       return { tool_calls: response.tool_calls };
     }
   }

@@ -2,7 +2,6 @@ import { processChatMessage } from '../services/reportAgentService.js';
 
 export const handleChatMessage = async (req, res) => {
     try {
-        // history is an array of objects like { role: 'user' | 'assistant', content: '...' }
         const { history } = req.body;
         const userId = req.user._id;
 

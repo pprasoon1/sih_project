@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Modal from '../components/Modal';
+import ChatReportPage from './ChatReportPage';
+import { FaRobot } from 'react-icons/fa';
 import './CitizenDashboard.css';
 
 // --- SVG Icon Components ---
@@ -19,6 +21,7 @@ const CitizenDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -58,7 +61,6 @@ const CitizenDashboard = () => {
         },
       });
       alert('Report submitted successfully!');
-      // Reset form state
       setTitle('');
       setDescription('');
       setCategory('pothole');
@@ -158,6 +160,15 @@ const CitizenDashboard = () => {
             </button>
           </div>
         </div>
+      </Modal>
+
+      <button className="bot-fab" onClick={() => setIsChatOpen(true)}>
+        <FaRobot />
+        <span>AI Assistant</span>
+      </button>
+
+      <Modal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)}>
+        <ChatReportPage />
       </Modal>
     </>
   );
