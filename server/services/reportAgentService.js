@@ -1,15 +1,11 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
-import Report from "../models/Report.js";
-import User from "../models/User.js";
 
-// Initialize the AI Model
 const model = new ChatGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_API_KEY,
-  model: "gemini-pro", // 👈 The fix is to change 'modelName' to 'model'
+  model: "gemini-pro",
 });
 
-// Define the "Tools" the AI can use
 const tools = [
   {
     type: "function",
@@ -50,8 +46,7 @@ const tools = [
 
 const modelWithTools = model.bind({ tools });
 
-// Define the Agent's Logic
-export const processChatMessage = async (history, userId) => {
+export const processChatMessageStream = async (history) => {
   const userMessage = history.pop();
 
   const systemPrompt = `You are "CivicBot", a friendly AI assistant for reporting civic issues. Your goal is to guide the user to provide all necessary details. Follow these steps strictly:
@@ -69,28 +64,6 @@ export const processChatMessage = async (history, userId) => {
     new HumanMessage(userMessage.content),
   ];
 
-  const response = await modelWithTools.invoke(conversation);
-  
-  if (response.tool_calls && response.tool_calls.length > 0) {
-    const toolCall = response.tool_calls[0];
-    if (toolCall.name === "submit_report") {
-      const { title, category, description, latitude, longitude, mediaUrl } = toolCall.args;
-      
-      const report = await Report.create({
-        title, category, description, reporterId: userId,
-        location: { type: 'Point', coordinates: [longitude, latitude] },
-        mediaUrls: [mediaUrl],
-      });
-      await User.findByIdAndUpdate(userId, { $inc: { points: 5 } });
-      
-      return {
-        content: `Thank you! Your report has been submitted successfully. Report ID: ${report._id}.`,
-        isEndOfConversation: true
-      };
-    } else {
-      return { tool_calls: response.tool_calls };
-    }
-  }
-
-  return { content: response.content };
+  const stream = await modelWithTools.stream(conversation);
+  return stream;
 };

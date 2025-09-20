@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import PhotoUploader from '../components/PhotoUploader';
 import './ChatReportPage.css';
 
@@ -20,30 +19,61 @@ const ChatReportPage = () => {
 
     const sendMessage = async (messageContent, isHiddenFromUi = false) => {
         const userMessage = { role: 'user', content: messageContent };
-        const currentMessages = isHiddenFromUi ? messages : [...messages, userMessage];
+        const newMessages = isHiddenFromUi ? messages : [...messages, userMessage];
         
         if (!isHiddenFromUi) {
-            setMessages(currentMessages);
+            setMessages(newMessages);
             setInput('');
         }
         setIsThinking(true);
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: "" }]);
 
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.post('/api/chat/report', 
-                { history: currentMessages },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await fetch('/api/chat/report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ history: newMessages }),
+            });
 
-            if (res.data.tool_calls) {
-                handleToolCall(res.data.tool_calls[0]);
-            } else {
-                const agentMessage = { role: 'assistant', content: res.data.content };
-                setMessages(prev => [...prev, agentMessage]);
+            if (!response.body) return;
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value);
+
+                if (chunk.includes("<TOOL_CALL>")) {
+                    const toolCallJSON = chunk.split('<TOOL_CALL>')[1].replace('</TOOL_CALL>', '');
+                    const toolData = JSON.parse(toolCallJSON);
+                    handleToolCall(toolData.tool_calls[0]);
+                    setMessages(prev => prev.slice(0, -1));
+                } else {
+                    setMessages(prev => {
+                        const lastMsgIndex = prev.length - 1;
+                        if (prev[lastMsgIndex]?.role === 'assistant') {
+                            const updatedMessages = [...prev];
+                            updatedMessages[lastMsgIndex].content += chunk;
+                            return updatedMessages;
+                        }
+                        return prev;
+                    });
+                }
             }
         } catch (error) {
-            const errorMessage = { role: 'assistant', content: "Sorry, I'm having trouble connecting. Please try again." };
-            setMessages(prev => [...prev, errorMessage]);
+            console.error("Streaming error:", error);
+            setMessages(prev => {
+                const lastMsgIndex = prev.length - 1;
+                const updatedMessages = [...prev];
+                updatedMessages[lastMsgIndex].content = "Sorry, an error occurred. Please try again.";
+                return updatedMessages;
+            });
         } finally {
             setIsThinking(false);
         }
@@ -78,16 +108,16 @@ const ChatReportPage = () => {
 
     return (
         <div className="chat-container">
-            <div className="chat-header">
-                <h3>CivicBot Assistant</h3>
-            </div>
+            <div className="chat-header"><h3>CivicBot Assistant</h3></div>
             <div className="chat-messages">
                 {messages.map((msg, index) => (
                     <div key={index} className={`message ${msg.role}`}>
                         <div className="message-bubble">{msg.content}</div>
                     </div>
                 ))}
-                {isThinking && <div className="message assistant"><div className="message-bubble typing-indicator"><span></span><span></span><span></span></div></div>}
+                {isThinking && messages[messages.length - 1]?.content === "" && (
+                    <div className="message assistant"><div className="message-bubble typing-indicator"><span></span><span></span><span></span></div></div>
+                )}
                 <div ref={messagesEndRef} />
             </div>
             <div className="chat-input-area">
