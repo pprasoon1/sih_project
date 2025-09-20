@@ -54,7 +54,12 @@ export const handleChatMessage = async (req, res) => {
                 case 'display_extracted_info':
                     const { title, category, description, confidence } = toolCall.args;
                     sessionData.extractedInfo = { title, category, description, confidence };
+                    sessionData.title = title;
+                    sessionData.category = category;
+                    sessionData.description = description;
                     sessionData.step = 'info_displayed';
+                    
+                    console.log('Updated session with extracted info:', JSON.stringify(sessionData, null, 2));
                     
                     responseContent = `🔍 **I've analyzed your photo and description:**\n\n**Title:** ${title}\n**Category:** ${category}\n**Description:** ${description}\n\n*Confidence: ${Math.round(confidence * 100)}%*\n\n⏰ You can edit any of these details in the next 10 seconds, or I'll proceed automatically.`;
                     
@@ -149,6 +154,7 @@ export const handleChatMessage = async (req, res) => {
 export const handleLocationUpdate = async (req, res) => {
     try {
         const { latitude, longitude, sessionId } = req.body;
+        const userId = req.user._id;
 
         if (!latitude || !longitude || !sessionId) {
             return res.status(400).json({ error: 'Location data and sessionId are required' });
@@ -168,80 +174,63 @@ export const handleLocationUpdate = async (req, res) => {
         const locationMessage = `📍 Location received: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
         sessionData.history.push({ role: 'user', content: locationMessage });
 
-        // Process next step with AI
-        const aiResponse = await processChatMessageStream(sessionData.history, sessionData);
+        // Automatically submit the report since we have all required data
+        const title = sessionData.title || sessionData.extractedInfo?.title;
+        const category = sessionData.category || sessionData.extractedInfo?.category;
+        const description = sessionData.description || sessionData.extractedInfo?.description;
+        const mediaUrl = sessionData.mediaUrl;
         
-        console.log('Location update AI response:', JSON.stringify(aiResponse, null, 2));
+        console.log('Auto-submitting report with session data:', { title, category, description, latitude, longitude, mediaUrl });
         
-        let responseContent = aiResponse.content || 'Great! I have your location. Now submitting your report...';
-        let toolCalls = aiResponse.tool_calls || [];
-
-        // Handle tool calls (like submit_report)
-        if (toolCalls && toolCalls.length > 0) {
-            const toolCall = toolCalls[0];
-            
-            if (toolCall.name === 'submit_report') {
-                // Use session data for submission
-                const title = sessionData.title || sessionData.extractedInfo?.title;
-                const category = sessionData.category || sessionData.extractedInfo?.category;
-                const description = sessionData.description || sessionData.extractedInfo?.description;
-                const mediaUrl = sessionData.mediaUrl;
-                
-                console.log('Submitting report with session data:', { title, category, description, latitude, longitude, mediaUrl });
-                
-                try {
-                    // Create the report
-                    const report = await Report.create({
-                        title,
-                        category,
-                        description,
-                        reporterId: req.user._id,
-                        location: { 
-                            type: 'Point', 
-                            coordinates: [longitude, latitude] 
-                        },
-                        mediaUrls: [mediaUrl],
-                        status: 'pending',
-                        createdAt: new Date()
-                    });
-
-                    // Update user points
-                    await User.findByIdAndUpdate(req.user._id, { 
-                        $inc: { points: 5 } 
-                    });
-
-                    // Clear session data
-                    sessionStore.delete(sessionId);
-
-                    responseContent = `✅ **Report Successfully Submitted!**\n\n**Report ID:** ${report._id}\n**Title:** ${title}\n**Category:** ${category}\n\nThank you for helping improve our community! You've earned 5 points. 🏆\n\nIs there anything else you'd like to report?`;
-
-                    return res.json({
-                        message: responseContent,
-                        action: 'report_submitted',
-                        reportId: report._id,
-                        sessionId: sessionId
-                    });
-
-                } catch (error) {
-                    console.error('Error submitting report from location update:', error);
-                    responseContent = '❌ Sorry, there was an error submitting your report. Please try again.';
-                    
-                    return res.json({
-                        message: responseContent,
-                        action: 'error',
-                        sessionId: sessionId
-                    });
-                }
-            }
+        // Validate we have all required data
+        if (!title || !category || !description || !mediaUrl) {
+            console.error('Missing required data for auto-submission:', { title, category, description, mediaUrl });
+            return res.status(400).json({ 
+                error: 'Missing required data for report submission',
+                message: 'Some required information is missing. Please try again.'
+            });
         }
+        
+        try {
+            // Create the report
+            const report = await Report.create({
+                title,
+                category,
+                description,
+                reporterId: userId,
+                location: { 
+                    type: 'Point', 
+                    coordinates: [longitude, latitude] 
+                },
+                mediaUrls: [mediaUrl],
+                status: 'pending',
+                createdAt: new Date()
+            });
 
-        sessionData.history.push({ role: 'assistant', content: responseContent });
-        sessionStore.set(sessionId, sessionData);
+            // Update user points
+            await User.findByIdAndUpdate(userId, { 
+                $inc: { points: 5 } 
+            });
 
-        return res.json({
-            message: responseContent,
-            sessionId: sessionId
-        });
+            // Clear session data
+            sessionStore.delete(sessionId);
+
+            const responseContent = `✅ **Report Successfully Submitted!**\n\n**Report ID:** ${report._id}\n**Title:** ${title}\n**Category:** ${category}\n\nThank you for helping improve our community! You've earned 5 points. 🏆\n\nIs there anything else you'd like to report?`;
+
+            return res.json({
+                message: responseContent,
+                action: 'report_submitted',
+                reportId: report._id,
+                sessionId: sessionId
+            });
+
+        } catch (error) {
+            console.error('Error auto-submitting report from location update:', error);
+            return res.status(500).json({ 
+                error: 'Failed to submit report',
+                message: '❌ Sorry, there was an error submitting your report. Please try again.'
+            });
+        }
 
     } catch (error) {
         console.error("Error handling location update:", error);
@@ -276,6 +265,8 @@ export const handlePhotoWithDescription = async (req, res) => {
         sessionData.mediaUrl = mediaUrl;
         sessionData.step = 'photo_processed';
         sessionData.description = description;
+        
+        console.log('Updated session data:', JSON.stringify(sessionData, null, 2));
 
         // Add photo and description to history
         const photoMessage = `📷 Photo uploaded: ${mediaUrl}\n📝 Description: ${description}`;

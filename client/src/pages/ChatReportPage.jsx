@@ -45,7 +45,12 @@ const ChatReportPage = () => {
     }, [showEditOptions, editTimer, currentStep, extractedInfo]);
 
     const proceedToNextStep = async () => {
-        console.log('proceedToNextStep called:', { currentStep, extractedInfo: !!extractedInfo });
+        console.log('proceedToNextStep called:', { 
+            currentStep, 
+            extractedInfo: !!extractedInfo,
+            reportData: reportData,
+            sessionId: sessionId
+        });
         if (currentStep === 'editing' && extractedInfo) {
             console.log('Proceeding from editing to location step...');
             setCurrentStep('location');
@@ -250,6 +255,7 @@ const ChatReportPage = () => {
     };
 
     const updateExtractedInfo = (field, value) => {
+        console.log('Updating extracted info:', { field, value });
         setExtractedInfo(prev => ({
             ...prev,
             [field]: value
