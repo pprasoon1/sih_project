@@ -1,0 +1,42 @@
+.photo-uploader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 2px dashed #ced4da;
+    border-radius: 8px;
+}
+
+.photo-label {
+    padding: 1rem 2rem;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #495057;
+    background-color: #f8f9fa;
+    text-align: center;
+}
+
+.photo-preview {
+    max-height: 150px;
+    max-width: 100%;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.upload-confirm-btn {
+    width: 100%;
+    padding: 0.75rem;
+    border: none;
+    background-color: #198754;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.upload-confirm-btn:disabled {
+    background-color: #6c757d;
+}

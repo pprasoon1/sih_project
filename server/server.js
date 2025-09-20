@@ -15,6 +15,7 @@ import analyticsRoutes from './routes/analtyicsRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import staffRoutes from './routes/staffRoutes.js';
 import { scheduleHealthScoreJob } from './services/healthScoreService.js';
+import chatRoutes from './routes/chatRoutes.js'
 
 dotenv.config();
 connectDB();
@@ -46,6 +47,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Socket.IO
 io.on("connection", (socket) => {
