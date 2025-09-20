@@ -3,7 +3,7 @@ import { HumanMessage, AIMessage } from "@langchain/core/messages";
 
 const model = new ChatGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_API_KEY,
-  model: "gemini-pro",
+  model: "gemini-1.5-flash",
 });
 
 const tools = [
