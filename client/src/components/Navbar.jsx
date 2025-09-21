@@ -30,6 +30,7 @@ const Navbar = () => {
 
                     {/* Links visible only when logged in */}
                     {token && <NavLink to="/dashboard">Report an Issue</NavLink>}
+                    {token && <NavLink to="/agent">🤖 AI Assistant</NavLink>}
                     {token && <NavLink to="/myreports">My Reports</NavLink>}
                     {token && <NavLink to="/profile">My Profile</NavLink>}
                     

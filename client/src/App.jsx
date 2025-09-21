@@ -27,6 +27,7 @@ import ResolveTaskPage from './pages/ResolveTaskPage';
 import StaffRoute from './components/StaffRoute';
 import HealthMapPage from './pages/HealthMapPage';
 import StaffManagementPage from './pages/StaffManagement';
+import AgentPage from './pages/AgentPage';
 
 // A helper component to access context hooks after the provider is set up
 const AppContent = () => {
@@ -62,6 +63,7 @@ const AppContent = () => {
           {/* --- Citizen Protected Routes --- */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<CitizenDashboard />} />
+            <Route path="/agent" element={<AgentPage />} />
             <Route path='/myreports' element={<MyReports />} />
             <Route path='/feed' element={<FeedPage />} />
             <Route path="/profile" element={<ProfilePage />} />

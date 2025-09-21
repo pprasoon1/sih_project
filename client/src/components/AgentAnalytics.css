@@ -1,0 +1,156 @@
+/* Agent Analytics Styles */
+.agent-analytics {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.agent-analytics h3 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.metric-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.metric-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.category-breakdown {
+  margin-top: 25px;
+}
+
+.category-breakdown h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.category-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.category-name {
+  font-weight: 600;
+  color: #333;
+  text-transform: capitalize;
+  min-width: 100px;
+}
+
+.category-stats {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.error {
+  color: #dc3545;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .analytics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .metric-card {
+    padding: 15px;
+  }
+  
+  .metric-value {
+    font-size: 1.5rem;
+  }
+  
+  .category-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .category-stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 480px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .category-stats {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}

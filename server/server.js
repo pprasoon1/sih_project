@@ -15,6 +15,7 @@ import analyticsRoutes from './routes/analtyicsRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import staffRoutes from './routes/staffRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import agentRoutes from './routes/agentRoutes.js';
 import { scheduleHealthScoreJob } from './services/healthScoreService.js';
 
 
@@ -50,6 +51,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/agent', agentRoutes);
 
 
 

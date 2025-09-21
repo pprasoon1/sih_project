@@ -15,6 +15,7 @@ const Home = () => {
         </p>
         <div className="home-buttons">
           <Link to="/dashboard" className="btn btn-primary">Report an Issue Now</Link>
+          <Link to="/agent" className="btn btn-secondary">🤖 Try AI Assistant</Link>
         </div>
       </div>
     </div>

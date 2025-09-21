@@ -28,6 +28,31 @@
     color: #6c757d;
 }
 
+.reporting-options {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+}
+
+.agent-option-btn {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.agent-option-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
 /* Progress Bar */
 .progress-bar {
     display: flex;

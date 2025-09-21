@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Modal from '../components/Modal';
 import { useSocket } from '../context/SocketContext'; // 👈 use socket
@@ -212,6 +213,11 @@ const CitizenDashboard = () => {
           <div className="card-header">
             <h2>Submit a Civic Report</h2>
             <p>Your location is automatically detected for accuracy.</p>
+            <div className="reporting-options">
+              <Link to="/agent" className="agent-option-btn">
+                🤖 Try AI Assistant
+              </Link>
+            </div>
           </div>
           <div className="progress-bar">
             <div className={`step ${step >= 1 ? 'active' : ''}`}>

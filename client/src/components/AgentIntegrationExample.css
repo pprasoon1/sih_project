@@ -1,0 +1,286 @@
+/* Agent Integration Example Styles */
+.integration-example {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 40px 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.example-header {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.example-header h1 {
+  font-size: 3rem;
+  margin-bottom: 20px;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.example-header p {
+  font-size: 1.3rem;
+  color: #666;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.reporting-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.option-card {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.option-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+}
+
+.option-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+}
+
+.agent-option::before {
+  background: linear-gradient(45deg, #4CAF50, #45a049);
+}
+
+.traditional-option::before {
+  background: linear-gradient(45deg, #2196F3, #1976D2);
+}
+
+.option-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.option-card h2 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.option-card p {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 30px 0;
+  text-align: left;
+}
+
+.feature-list li {
+  padding: 10px 0;
+  font-size: 1rem;
+  color: #555;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.feature-list li:last-child {
+  border-bottom: none;
+}
+
+.option-btn {
+  padding: 15px 30px;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 20px;
+}
+
+.agent-btn {
+  background: linear-gradient(45deg, #4CAF50, #45a049);
+  color: white;
+  box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+}
+
+.agent-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(76, 175, 80, 0.4);
+}
+
+.traditional-btn {
+  background: linear-gradient(45deg, #2196F3, #1976D2);
+  color: white;
+  box-shadow: 0 8px 20px rgba(33, 150, 243, 0.3);
+}
+
+.traditional-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(33, 150, 243, 0.4);
+}
+
+/* Modal Styles */
+.agent-modal,
+.form-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.agent-modal-content {
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.form-modal-content {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.form-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 5px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.form-body {
+  color: #666;
+  line-height: 1.6;
+}
+
+.form-body code {
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 5px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  display: block;
+  margin: 10px 0;
+  border: 1px solid #e9ecef;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .integration-example {
+    padding: 20px 10px;
+  }
+  
+  .example-header h1 {
+    font-size: 2rem;
+  }
+  
+  .example-header p {
+    font-size: 1.1rem;
+  }
+  
+  .reporting-options {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  
+  .option-card {
+    padding: 30px 20px;
+  }
+  
+  .option-card h2 {
+    font-size: 1.8rem;
+  }
+  
+  .option-card p {
+    font-size: 1rem;
+  }
+  
+  .option-icon {
+    font-size: 3rem;
+  }
+  
+  .agent-modal-content,
+  .form-modal-content {
+    margin: 10px;
+    max-height: 85vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .example-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .option-card {
+    padding: 25px 15px;
+  }
+  
+  .option-card h2 {
+    font-size: 1.6rem;
+  }
+  
+  .option-btn {
+    padding: 12px 25px;
+    font-size: 1rem;
+  }
+}
