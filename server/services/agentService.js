@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@langchain/google-genai';
-import { GoogleCloudSpeechToText } from '@google-cloud/speech';
+import speech from '@google-cloud/speech';
 import { createReadStream } from 'fs';
 import { promisify } from 'util';
 import { pipeline } from 'stream';
@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 
 // Initialize AI services
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
-const speechClient = new GoogleCloudSpeechToText();
+const speechClient = new speech.SpeechClient();
 
 /**
  * Agent Service for AI-powered civic issue reporting

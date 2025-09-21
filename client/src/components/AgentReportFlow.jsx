@@ -7,8 +7,6 @@ import ImageCapture from './ImageCapture';
 import './AgentReportFlow.css';
 
 const AgentReportFlow = ({ onComplete, onCancel }) => {
-  console.log('AgentReportFlow component rendered');
-  
   // State management
   const [currentStep, setCurrentStep] = useState(1);
   const [inputType, setInputType] = useState(null); // 'image', 'voice', 'text'
@@ -25,6 +23,9 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
     coordinates: null
   });
   
+  // Input state for text mode
+  const [textInput, setTextInput] = useState('');
+  
   // Location data
   const [location, setLocation] = useState({
     lat: null,
@@ -35,14 +36,16 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
   // Refs
   const countdownRef = useRef(null);
   const fileInputRef = useRef(null);
+  const hasSubmittedRef = useRef(false);
 
-  // Countdown timer effect
+// Countdown timer effect
   useEffect(() => {
     if (countdown > 0 && !isPaused && currentStep < 6) {
       countdownRef.current = setTimeout(() => {
         setCountdown(countdown - 1);
       }, 1000);
-    } else if (countdown === 0 && !isPaused) {
+    } else if (countdown === 0 && !isPaused && currentStep < 6) {
+      // Only auto-advance up to step 6
       handleAutoAdvance();
     }
     
@@ -52,6 +55,14 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
       }
     };
   }, [countdown, isPaused, currentStep]);
+
+  // When we reach step 6, automatically submit once
+  useEffect(() => {
+    if (currentStep === 6 && !isProcessing && !hasSubmittedRef.current) {
+      hasSubmittedRef.current = true;
+      handleSubmitReport();
+    }
+  }, [currentStep, isProcessing]);
 
   // Get user location on component mount
   useEffect(() => {
@@ -93,11 +104,12 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
     setIsPaused(!isPaused);
   };
 
-  const handleRetry = () => {
+const handleRetry = () => {
     setCurrentStep(1);
     setInputType(null);
     setCountdown(5);
     setIsPaused(false);
+    hasSubmittedRef.current = false;
     setReportData({
       title: '',
       description: '',
@@ -105,6 +117,7 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
       mediaFiles: [],
       coordinates: null
     });
+    setTextInput('');
   };
 
   const handleCancel = () => {
@@ -149,15 +162,16 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
     }
   };
 
-  const handleVoiceTranscript = async (transcript) => {
+const handleVoiceTranscript = async (transcript) => {
     try {
       // Analyze the transcript using AI
-      const analysis = await agentAPI.analyzeText(transcript);
+      const resp = await agentAPI.analyzeText(transcript);
+      const analysis = resp?.data?.data || {};
       setReportData(prev => ({
         ...prev,
-        title: analysis.title,
-        description: analysis.description,
-        category: analysis.category,
+        title: analysis.title || extractTitleFromTranscript(transcript),
+        description: analysis.description || transcript,
+        category: analysis.category || prev.category,
         confidence: analysis.confidence,
         severity: analysis.severity,
         suggestedPriority: analysis.suggestedPriority
@@ -175,15 +189,16 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
     setCountdown(5);
   };
 
-  const handleTextInput = async (text) => {
+const handleTextInput = async (text) => {
     try {
       // Analyze the text using AI
-      const analysis = await agentAPI.analyzeText(text);
+      const resp = await agentAPI.analyzeText(text);
+      const analysis = resp?.data?.data || {};
       setReportData(prev => ({
         ...prev,
-        title: analysis.title,
-        description: analysis.description,
-        category: analysis.category,
+        title: analysis.title || extractTitleFromTranscript(text),
+        description: analysis.description || text,
+        category: analysis.category || prev.category,
         confidence: analysis.confidence,
         severity: analysis.severity,
         suggestedPriority: analysis.suggestedPriority
@@ -260,7 +275,7 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
     }));
   };
 
-  // Step 6: Submit report
+// Step 6: Submit report
   const handleSubmitReport = async () => {
     if (!reportData.title || !reportData.coordinates) {
       toast.error('Missing required information');
@@ -323,7 +338,9 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
       setCountdown(0);
       
       if (onComplete) {
-        setTimeout(() => onComplete(response.data.data), 2000);
+        // Some endpoints return data in different shapes; try both
+        const payload = response?.data?.data || response?.data;
+        setTimeout(() => onComplete(payload), 2000);
       }
     } catch (error) {
       console.error('Error submitting report:', error);
@@ -386,18 +403,20 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
                 />
               </div>
             )}
-            {inputType === 'text' && (
+{inputType === 'text' && (
               <div>
                 <p>Describe the issue in your own words:</p>
                 <textarea
                   className="text-input"
                   placeholder="Describe the issue you've encountered..."
-                  onChange={(e) => handleTextInput(e.target.value)}
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
                   rows="4"
                 />
                 <button 
                   className="btn-primary"
-                  onClick={() => handleTextInput(document.querySelector('.text-input').value)}
+                  onClick={() => handleTextInput(textInput)}
+                  disabled={!textInput.trim()}
                 >
                   Continue
                 </button>
@@ -571,11 +590,11 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
         </div>
       )}
 
-      {currentStep === 5 && !isProcessing && (
+{currentStep === 5 && !isProcessing && (
         <div className="submit-section">
           <button 
             className="btn-primary submit-btn"
-            onClick={handleSubmitReport}
+            onClick={() => setCurrentStep(6)}
             disabled={!reportData.title || !reportData.coordinates}
           >
             Submit Report

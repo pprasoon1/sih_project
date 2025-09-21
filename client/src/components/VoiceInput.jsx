@@ -72,13 +72,19 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Tap to spea
                 setError(errorMessage);
                 setIsListening(false);
                 
-                // Auto-retry for network errors (up to 2 times)
-                if (event.error === 'network' && retryCount < 2) {
+                // For network errors, immediately fall back to text input instead of retrying
+                if (event.error === 'network') {
+                    setShowTextFallback(true);
+                    return;
+                }
+                
+                // Optionally retry once for transient 'no-speech' errors
+                if (event.error === 'no-speech' && retryCount < 1) {
                     setTimeout(() => {
                         setRetryCount(prev => prev + 1);
                         setError(null);
                         startListening();
-                    }, 2000);
+                    }, 1500);
                 }
             };
 
