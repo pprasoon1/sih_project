@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+// Assuming this component exists and is styled separately
 import MyReports from '../components/MyReports';
+import { FaChartBar, FaCheckCircle, FaStar, FaPlus, FaListAlt } from 'react-icons/fa';
 
 const ProfilePage = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // State for the new tabs in the contributions section
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
-        setError('Please log in to view your profile');
+        setError('Please log in to view your profile.');
         setLoading(false);
         return;
       }
@@ -21,9 +25,9 @@ const ProfilePage = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         setProfile(res.data);
-      } catch (error) {
-        console.error("Failed to fetch profile", error);
-        setError('Failed to load profile');
+      } catch (err) {
+        console.error("Failed to fetch profile", err);
+        setError('Failed to load profile data.');
       } finally {
         setLoading(false);
       }
@@ -33,14 +37,13 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="container">
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="spinner mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading profile...</p>
-            </div>
-          </div>
+      <div className="flex min-h-[80vh] items-center justify-center bg-slate-100">
+        <div className="text-center">
+          <svg className="mx-auto h-10 w-10 animate-spin text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="mt-4 font-semibold text-slate-600">Loading Profile...</p>
         </div>
       </div>
     );
@@ -48,179 +51,174 @@ const ProfilePage = () => {
 
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="container">
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to Load Profile</h3>
-              <p className="text-gray-600 mb-4">{error || 'Profile not found'}</p>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="btn btn-primary"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
+      <div className="flex min-h-[80vh] items-center justify-center bg-slate-100 p-4">
+        <div className="w-full max-w-md rounded-xl bg-white p-8 text-center shadow-md border border-slate-200">
+          <h3 className="text-xl font-bold text-slate-800">An Error Occurred</h3>
+          <p className="mt-2 text-sm text-slate-600">{error || 'Could not find profile information.'}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-6 rounded-md bg-slate-800 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
   }
 
   const totalForNextRank = profile.points + profile.pointsToNextRank;
-  const progressPercentage = totalForNextRank > profile.points ? (profile.points / totalForNextRank) * 100 : 100;
+  const progressPercentage = totalForNextRank > 0 ? (profile.points / totalForNextRank) * 100 : 100;
 
-  const getRankIcon = (rank) => {
-    const icons = {
-      'Citizen': '👤',
-      'Contributor': '⭐',
-      'Advocate': '🏆',
-      'Champion': '👑',
-      'Hero': '🦸'
+  const getRankInfo = (rank) => {
+    const ranks = {
+      'Citizen': { icon: '👤', color: 'text-slate-600', bg: 'bg-slate-100' },
+      'Contributor': { icon: '⭐', color: 'text-sky-700', bg: 'bg-sky-100' },
+      'Advocate': { icon: '🏆', color: 'text-violet-700', bg: 'bg-violet-100' },
+      'Champion': { icon: '👑', color: 'text-amber-700', bg: 'bg-amber-100' },
+      'Hero': { icon: '🦸', color: 'text-red-700', bg: 'bg-red-100' }
     };
-    return icons[rank] || '👤';
+    return ranks[rank] || ranks['Citizen'];
   };
 
-  const getRankColor = (rank) => {
-    const colors = {
-      'Citizen': 'text-gray-600',
-      'Contributor': 'text-blue-600',
-      'Advocate': 'text-purple-600',
-      'Champion': 'text-yellow-600',
-      'Hero': 'text-red-600'
-    };
-    return colors[rank] || 'text-gray-600';
-  };
+  const rankInfo = getRankInfo(profile.rank);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container">
-        {/* Profile Header */}
-        <div className="card mb-8">
-          <div className="card-body">
-            <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
-              {/* Avatar */}
-              <div className="flex-shrink-0">
-                <div className="w-24 h-24 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white text-3xl font-bold">
-                  {profile.name.charAt(0).toUpperCase()}
+    <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl space-y-8">
+        
+        {/* ## Profile Header Card ## */}
+        <header className="rounded-xl border border-slate-200 bg-white p-6 shadow-lg">
+          <div className="grid grid-cols-1 items-center gap-6 md:grid-cols-3">
+            {/* User Info Section */}
+            <div className="flex items-center gap-5 md:col-span-1">
+              <div className="mx-auto flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-blue-500 text-3xl font-bold text-white">
+                {profile.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900">{profile.name}</h1>
+                <div className={`mt-1 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${rankInfo.bg} ${rankInfo.color}`}>
+                  <span>{rankInfo.icon}</span>
+                  {profile.rank}
                 </div>
               </div>
-
-              {/* Profile Info */}
-              <div className="flex-1 text-center md:text-left">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{profile.name}</h1>
-                <div className="flex items-center justify-center md:justify-start space-x-2 mb-4">
-                  <span className="text-2xl">{getRankIcon(profile.rank)}</span>
-                  <span className={`text-lg font-semibold ${getRankColor(profile.rank)}`}>
-                    {profile.rank}
-                  </span>
+            </div>
+            
+            {/* Stats & Progress Section */}
+            <div className="md:col-span-2 md:border-l md:border-slate-200 md:pl-6">
+              <div className="grid grid-cols-2 items-center gap-6 sm:grid-cols-4">
+                <div className="col-span-2 sm:col-span-1">
+                  <p className="text-sm font-medium text-slate-500">Civic Score</p>
+                  <p className="text-4xl font-bold text-emerald-500">{profile.points}</p>
                 </div>
-
-                {/* Progress Bar */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                    <span>Progress to next rank</span>
-                    <span>{profile.points} / {totalForNextRank} points</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${progressPercentage}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-2">
-                    {profile.pointsToNextRank > 0 
-                      ? `${profile.pointsToNextRank} points to next rank` 
-                      : "Max Rank Achieved! 🎉"
-                    }
-                  </p>
-                </div>
+                <StatItem icon={<FaChartBar />} title="Submitted" value={profile.stats.reportsSubmitted} />
+                <StatItem icon={<FaCheckCircle />} title="Resolved" value={profile.stats.reportsResolved} />
+                <StatItem icon={<FaStar />} title="Upvoted" value={profile.stats.upvotesReceived} />
               </div>
-
-              {/* Civic Score */}
-              <div className="flex-shrink-0">
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-white text-2xl font-bold">{profile.points}</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Civic Score</h3>
-                  <p className="text-sm text-gray-600">Total Points</p>
+              <div className="mt-5">
+                <div className="flex justify-between text-xs font-medium text-slate-500">
+                  <span>Progress to next rank</span>
+                  <span>{profile.pointsToNextRank > 0 ? `${profile.pointsToNextRank} points remaining` : "Max Rank!"}</span>
+                </div>
+                <div className="mt-1 h-2 w-full rounded-full bg-slate-100">
+                  <div 
+                    className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
+                    style={{ width: `${progressPercentage}%` }}
+                  ></div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="card text-center">
-            <div className="card-body">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">{profile.stats.reportsSubmitted}</h3>
-              <p className="text-gray-600">Reports Submitted</p>
+        {/* ## Main Content Grid ## */}
+        <main className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          {/* Achievements Section */}
+          <div className="lg:col-span-1">
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-lg">
+              <h2 className="text-lg font-bold text-slate-800">Achievements</h2>
+              {profile.badges && profile.badges.length > 0 ? (
+                <div className="mt-4 grid grid-cols-4 gap-4 sm:grid-cols-5 lg:grid-cols-4">
+                  {profile.badges.map(badge => (
+                    <div key={badge.id} title={badge.name} className="flex flex-col items-center text-center">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-slate-100 text-3xl transition hover:bg-slate-200">
+                          {badge.icon}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-slate-500">No achievements unlocked yet.</p>
+              )}
             </div>
           </div>
-
-          <div className="card text-center">
-            <div className="card-body">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+          
+          {/* ## Contributions Section - REDESIGNED ## */}
+          <div className="lg:col-span-2">
+            <div className="rounded-xl border border-slate-200 bg-white shadow-lg">
+              {/* Card Header with Title and Action Button */}
+              <div className="flex items-center justify-between border-b border-slate-200 p-4 sm:p-6">
+                <div className="flex items-center gap-3">
+                  <FaListAlt className="h-5 w-5 text-slate-400" />
+                  <h2 className="text-lg font-bold text-slate-800">Your Contributions</h2>
+                </div>
+                <button className="flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 sm:px-4">
+                  <FaPlus className="h-3 w-3" />
+                  <span className="hidden sm:inline">New Report</span>
+                </button>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">{profile.stats.reportsResolved}</h3>
-              <p className="text-gray-600">Reports Resolved</p>
-            </div>
-          </div>
 
-          <div className="card text-center">
-            <div className="card-body">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                </svg>
+              {/* Tab Navigation */}
+              <div className="px-4 sm:px-6">
+                <div className="border-b border-slate-200">
+                  <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                    <TabButton name="All" tab="all" activeTab={activeTab} onClick={setActiveTab} />
+                    <TabButton name="Resolved" tab="resolved" activeTab={activeTab} onClick={setActiveTab} />
+                    <TabButton name="Pending" tab="pending" activeTab={activeTab} onClick={setActiveTab} />
+                  </nav>
+                </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">{profile.stats.upvotesReceived}</h3>
-              <p className="text-gray-600">Upvotes Received</p>
-            </div>
-          </div>
-        </div>
 
-        {/* Achievements */}
-        {profile.badges && profile.badges.length > 0 && (
-          <div className="card mb-8">
-            <div className="card-body">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Achievements</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {profile.badges.map(badge => (
-                  <div key={badge.id} className="text-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div className="text-3xl mb-2">{badge.icon}</div>
-                    <p className="text-sm font-medium text-gray-900">{badge.name}</p>
-                  </div>
-                ))}
+              {/* Tab Content Area */}
+              <div className="p-4 sm:p-6">
+                {/* The MyReports component would ideally use the 'filter' prop to show the correct data */}
+                <MyReports filter={activeTab} />
               </div>
             </div>
           </div>
-        )}
-
-        {/* Your Reports Section */}
-        <div className="card">
-          <div className="card-body">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Contributions</h2>
-            <MyReports />
-          </div>
-        </div>
+        </main>
       </div>
     </div>
+  );
+};
+
+// A lightweight component for individual stats in the header
+const StatItem = ({ icon, title, value }) => (
+  <div className="flex items-center gap-3">
+    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+      {React.cloneElement(icon, { className: 'h-4 w-4' })}
+    </div>
+    <div>
+      <p className="text-lg font-bold text-slate-800">{value}</p>
+      <p className="text-xs text-slate-500">{title}</p>
+    </div>
+  </div>
+);
+
+// A reusable component for the tabs
+const TabButton = ({ name, tab, activeTab, onClick }) => {
+  const isActive = activeTab === tab;
+  return (
+    <button
+      onClick={() => onClick(tab)}
+      className={`whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition-colors
+        ${isActive
+          ? 'border-blue-500 text-blue-600'
+          : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
+        }`
+      }
+    >
+      {name}
+    </button>
   );
 };
 
