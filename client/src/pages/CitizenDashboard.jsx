@@ -1,6 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Modal from '../components/Modal';
+<<<<<<< HEAD
+=======
+import { useSocket } from '../context/SocketContext'; // 👈 use socket
+import { toast } from 'react-hot-toast'; // 👈 toast notifications
+import './CitizenDashboard.css';
+
+// --- SVG Icon Components ---
+const TitleIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+    viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+  </svg>
+);
+const DescIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+    viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="8" y1="6" x2="21" y2="6"></line>
+    <line x1="8" y1="12" x2="21" y2="12"></line>
+    <line x1="8" y1="18" x2="21" y2="18"></line>
+    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+  </svg>
+);
+const CategoryIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+    viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+  </svg>
+);
+const MediaIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+    viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+    <circle cx="12" cy="13" r="4"></circle>
+  </svg>
+);
+>>>>>>> 083cac110d260cf8a7699e1fb50e093ce38ca7f7
 
 const CitizenDashboard = () => {
   const [title, setTitle] = useState('');
@@ -13,6 +58,22 @@ const CitizenDashboard = () => {
   const [step, setStep] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
+  const socket = useSocket(); // 👈 get socket instance
+
+  // ✅ Listen for report status updates
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("reportStatusUpdated", ({ reportId, status }) => {
+      toast.success(`Your report has been updated to: ${status.replace("_", " ")}`);
+    });
+
+    return () => {
+      socket.off("reportStatusUpdated");
+    };
+  }, [socket]);
+
+  // Get user location
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -32,8 +93,8 @@ const CitizenDashboard = () => {
     if (loading) return;
 
     const userToken = localStorage.getItem('token');
-    if (!userToken) return alert('You must be logged in to submit a report.');
-    if (!lng || !lat) return alert('Location not available. Please enable location services.');
+    if (!userToken) return toast.error('You must be logged in to submit a report.');
+    if (!lng || !lat) return toast.error('Location not available. Please enable location services.');
 
     const formData = new FormData();
     formData.append('title', title);
@@ -50,7 +111,7 @@ const CitizenDashboard = () => {
           Authorization: `Bearer ${userToken}`,
         },
       });
-      alert('Report submitted successfully!');
+      toast.success('Report submitted successfully!');
       setTitle('');
       setDescription('');
       setCategory('pothole');
@@ -59,7 +120,7 @@ const CitizenDashboard = () => {
       setShowConfirmation(false);
     } catch (err) {
       console.error('❌ Error creating report:', err);
-      alert('Error submitting report. Please try again.');
+      toast.error('Error submitting report. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -81,6 +142,7 @@ const CitizenDashboard = () => {
     switch (step) {
       case 1:
         return (
+<<<<<<< HEAD
           <div className="space-y-6">
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -127,12 +189,43 @@ const CitizenDashboard = () => {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
+=======
+          <div className="form-step active">
+            <h3 className="step-title">1. Describe the Issue</h3>
+            <div className="input-wrapper">
+              <TitleIcon />
+              <input 
+                type="text" 
+                placeholder="e.g., Large pothole on Main Street" 
+                value={title} 
+                onChange={(e) => setTitle(e.target.value)} 
+                required 
+              />
+            </div>
+            <div className="input-wrapper">
+              <DescIcon />
+              <textarea 
+                placeholder="Provide details like size, depth, and potential danger..." 
+                value={description} 
+                onChange={(e) => setDescription(e.target.value)} 
+                rows="4" 
+              />
+            </div>
+            <button 
+              type="button" 
+              onClick={nextStep} 
+              className="btn btn-primary" 
+              disabled={!title}
+            >
+              Next Step
+>>>>>>> 083cac110d260cf8a7699e1fb50e093ce38ca7f7
             </button>
           </div>
         );
 
       case 2:
         return (
+<<<<<<< HEAD
           <div className="space-y-6">
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -215,6 +308,41 @@ const CitizenDashboard = () => {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
+=======
+          <div className="form-step active">
+            <h3 className="step-title">2. Categorize & Upload</h3>
+            <div className="input-wrapper">
+              <CategoryIcon />
+              <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                <option value="pothole">Pothole</option>
+                <option value="streetlight">Streetlight Outage</option>
+                <option value="garbage">Garbage</option>
+                <option value="water">Water Leak</option>
+                <option value="tree">Fallen Tree</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="input-wrapper file-input">
+              <MediaIcon />
+              <label htmlFor="file-upload">
+                {mediaFiles.length > 0 
+                  ? `${mediaFiles.length} file(s) selected` 
+                  : 'Upload Photo/Video'}
+              </label>
+              <input 
+                id="file-upload" 
+                type="file" 
+                accept="image/*,video/*" 
+                capture="environment" 
+                multiple 
+                onChange={handleFileChange} 
+              />
+            </div>
+            <div className="buttons-group">
+              <button type="button" onClick={prevStep} className="btn-link">Go Back</button>
+              <button type="button" onClick={() => setShowConfirmation(true)} className="btn btn-primary">
+                Review & Submit
+>>>>>>> 083cac110d260cf8a7699e1fb50e093ce38ca7f7
               </button>
             </div>
           </div>
@@ -281,6 +409,20 @@ const CitizenDashboard = () => {
               </div>
             </div>
           </div>
+<<<<<<< HEAD
+=======
+          <div className="progress-bar">
+            <div className={`step ${step >= 1 ? 'active' : ''}`}>
+              <div className="dot"></div><span>Details</span>
+            </div>
+            <div className={`step ${step >= 2 ? 'active' : ''}`}>
+              <div className="dot"></div><span>Evidence</span>
+            </div>
+          </div>
+          <form onSubmit={handleSubmit}>
+            {renderStep()}
+          </form>
+>>>>>>> 083cac110d260cf8a7699e1fb50e093ce38ca7f7
         </div>
       </div>
 

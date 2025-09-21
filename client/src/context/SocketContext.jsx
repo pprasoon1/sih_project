@@ -13,6 +13,8 @@ export const useSocket = () => {
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
 
+  
+
   useEffect(() => {
     // Establish the connection when the component mounts
     // const newSocket = io("http://https://backend-sih-project-l67a.onrender.com");
