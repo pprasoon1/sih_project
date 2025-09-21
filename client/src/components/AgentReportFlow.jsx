@@ -7,6 +7,8 @@ import ImageCapture from './ImageCapture';
 import './AgentReportFlow.css';
 
 const AgentReportFlow = ({ onComplete, onCancel }) => {
+  console.log('AgentReportFlow component rendered');
+  
   // State management
   const [currentStep, setCurrentStep] = useState(1);
   const [inputType, setInputType] = useState(null); // 'image', 'voice', 'text'

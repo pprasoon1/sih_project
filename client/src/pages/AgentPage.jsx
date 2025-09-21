@@ -52,6 +52,7 @@ const AgentPage = () => {
   };
 
   const handleStartAgent = () => {
+    console.log('Starting agent workflow...');
     setShowAgent(true);
   };
 
@@ -135,7 +136,10 @@ const AgentPage = () => {
       <div className="agent-actions">
         <button 
           className="start-agent-btn"
-          onClick={handleStartAgent}
+          onClick={() => {
+            console.log('Button clicked!');
+            handleStartAgent();
+          }}
         >
           🚀 Start AI Assistant
         </button>
@@ -152,8 +156,12 @@ const AgentPage = () => {
       </div>
 
       {showAgent && (
-        <div className="agent-modal">
-          <div className="agent-modal-content">
+        <div className="agent-modal" style={{backgroundColor: 'rgba(255, 0, 0, 0.5)'}}>
+          <div className="agent-modal-content" style={{backgroundColor: 'white', color: 'black', padding: '20px'}}>
+            {console.log('Rendering AgentReportFlow component, showAgent:', showAgent)}
+            <h2>Agent Modal Test</h2>
+            <p>If you can see this, the modal is working!</p>
+            <button onClick={handleAgentCancel}>Close</button>
             <AgentReportFlow 
               onComplete={handleAgentComplete}
               onCancel={handleAgentCancel}
