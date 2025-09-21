@@ -480,3 +480,9 @@ p {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Add to your src/index.css file */
+
+.map-background .leaflet-container {
+  outline: none;
+}
