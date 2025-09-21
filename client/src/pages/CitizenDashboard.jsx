@@ -21,16 +21,6 @@ const CitizenDashboard = () => {
 
   const socket = useSocket(); // Get socket instance from context
 
-  // --- Categories ---
-  const categories = [
-    { value: 'pothole', label: 'Pothole' },
-    { value: 'streetlight', label: 'Streetlight Outage' },
-    { value: 'garbage', label: 'Garbage Collection' },
-    { value: 'water', label: 'Water Leak' },
-    { value: 'tree', label: 'Fallen Tree' },
-    { value: 'other', label: 'Other' }
-  ];
-
   // --- Effects ---
 
   // Listen for real-time report status updates via sockets
@@ -38,8 +28,8 @@ const CitizenDashboard = () => {
     if (!socket) return;
 
     const handleStatusUpdate = ({ reportId, status }) => {
-      // You can enhance this by matching the reportId to a list of user's reports
-      toast.success(`A report has been updated to: ${status.replace("_", " ")}`);
+      // You can enhance this by matching the reportId to a list of the user's reports
+      toast.success(`A report's status was updated to: ${status.replace("_", " ")}`);
     };
 
     socket.on("reportStatusUpdated", handleStatusUpdate);
@@ -138,7 +128,7 @@ const CitizenDashboard = () => {
     { value: 'other', label: 'Other', icon: '📋' }
   ];
 
-  // --- Step Renderer ---
+  // --- Step Renderer Logic ---
   const renderStep = () => {
     switch (step) {
       case 1: // Describe the Issue
@@ -154,7 +144,7 @@ const CitizenDashboard = () => {
             <div className="space-y-4">
               <div className="form-group">
                 <label className="form-label">Issue Title</label>
-                <input type="text" placeholder="e.g., Large pothole on Main Street" value={title} onChange={(e) => setTitle(e.target.value)} className="form-input" required />
+                <input type="text" placeholder="e.g., Large pothole near Pari Chowk" value={title} onChange={(e) => setTitle(e.target.value)} className="form-input" required />
               </div>
               <div className="form-group">
                 <label className="form-label">Description</label>
@@ -220,59 +210,57 @@ const CitizenDashboard = () => {
       default:
         return null;
     }
-  };
+  }; // <-- FIX: Added the missing closing brace here
 
   // --- JSX Render ---
+  // FIX: Wrapped the entire return in a React Fragment <>...</>
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container">
+    <>
+      <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Report a Civic Issue</h1>
-            <p className="text-gray-600 mb-4">Help improve your community by reporting issues that need attention.</p>
+          <header className="text-center mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Report a Civic Issue</h1>
+            <p className="text-md text-gray-600 mb-6">Help improve your community by reporting issues that need attention.</p>
             
             {/* AI Assistant Option */}
-            <div className="mb-6">
-              <Link to="/agent" className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-lg">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-                🤖 Try AI Assistant
-              </Link>
+            <Link to="/agent" className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg transform hover:scale-105">
+              <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              Try AI Assistant Chat
+            </Link>
+          </header>
+
+          {/* Progress Indicator */}
+          <div className="mb-8">
+            <div className="flex items-center justify-center">
+                <div className={`flex items-center transition-colors duration-300 ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 ${ step >= 1 ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-200 text-gray-500 border-gray-200'}`}>1</div>
+                    <span className="ml-2 font-medium">Details</span>
+                </div>
+                <div className={`flex-auto border-t-2 transition-colors duration-300 mx-4 ${step >= 2 ? 'border-blue-600' : 'border-gray-200'}`}></div>
+                <div className={`flex items-center transition-colors duration-300 ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 ${ step >= 2 ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-200 text-gray-500 border-gray-200'}`}>2</div>
+                    <span className="ml-2 font-medium">Evidence</span>
+                </div>
             </div>
           </div>
 
-            {/* Progress Indicator */}
-            <div className="mb-8">
-              <div className="flex items-center justify-center">
-                  <div className={`flex items-center transition-colors duration-300 ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 ${ step >= 1 ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-200 text-gray-500 border-gray-200'}`}>1</div>
-                      <span className="ml-2 font-medium">Details</span>
-                  </div>
-                  <div className={`flex-auto border-t-2 transition-colors duration-300 mx-4 ${step >= 2 ? 'border-blue-600' : 'border-gray-200'}`}></div>
-                  <div className={`flex items-center transition-colors duration-300 ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 ${ step >= 2 ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-200 text-gray-500 border-gray-200'}`}>2</div>
-                      <span className="ml-2 font-medium">Evidence</span>
-                  </div>
-              </div>
+          {/* Form Card */}
+          <div className="card">
+            <div className="card-body">
+                {renderStep()}
             </div>
+          </div>
 
-            {/* Form Card */}
-            <div className="card">
-              <div className="card-body">
-                  {renderStep()}
-              </div>
-            </div>
-
-            {/* Location Status */}
-            <div className="mt-6 text-center">
-              <div className="inline-flex items-center space-x-2 text-sm text-gray-600">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                <span>
-                  {lng && lat ? `Location detected: ${lat.toFixed(4)}, ${lng.toFixed(4)} ✓` : 'Detecting location...'}
-                </span>
-              </div>
+          {/* Location Status */}
+          <div className="mt-6 text-center">
+            <div className="inline-flex items-center space-x-2 text-sm text-gray-600">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <span>
+                {lng && lat ? `Location detected: ${lat.toFixed(4)}, ${lng.toFixed(4)} ✓` : 'Detecting location...'}
+              </span>
             </div>
           </div>
         </div>
@@ -319,7 +307,7 @@ const CitizenDashboard = () => {
           </div>
         </div>
       </Modal>
-    </div>
+    </>
   );
 };
 
