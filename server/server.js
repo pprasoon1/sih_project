@@ -16,8 +16,8 @@ import userRoutes from './routes/userRoutes.js';
 import staffRoutes from './routes/staffRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import { scheduleHealthScoreJob } from './services/healthScoreService.js';
-import chatRoutes from './routes/chatRoutes.js'
-import agenticRoutes from './routes/agentic.js';
+
+
 
 dotenv.config();
 connectDB();
@@ -50,8 +50,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/agentic', agenticRoutes);
+
+
 
 // Socket.IO
 io.on("connection", (socket) => {

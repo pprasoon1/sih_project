@@ -11,6 +11,7 @@ const NotificationIcon = () => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const socket = useSocket();
 
+  // This effect runs ONCE on mount to fetch historical notifications
   useEffect(() => {
     const fetchNotifications = async () => {
       const token = localStorage.getItem('token');
@@ -19,43 +20,41 @@ const NotificationIcon = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // --- Start of Fix ---
-        // Verify that the response data is an array before using it
         if (Array.isArray(res.data)) {
           setNotifications(res.data);
           setUnreadCount(res.data.filter(n => !n.isRead).length);
         } else {
-          // If not an array, log the issue and default to empty arrays
-          console.error("API did not return an array for notifications:", res.data);
           setNotifications([]);
           setUnreadCount(0);
         }
-        // --- End of Fix ---
-
       } catch (error) {
         console.error("Failed to fetch notifications", error);
-        setNotifications([]); // Ensure state is an array even on error
+        setNotifications([]);
       }
     };
     fetchNotifications();
   }, []);
 
-  // ... (the rest of your component remains the same)
-
+  // --- THIS IS THE REAL-TIME LOGIC ---
+  // This effect listens for new notifications coming from the WebSocket
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) return; // Don't run if the socket isn't connected yet
     
     const handleNewNotification = (newNotification) => {
+      // Add the new notification to the top of the list in real-time
       setNotifications(prev => [newNotification, ...prev]);
+      // Increment the unread count badge in real-time
       setUnreadCount(prev => prev + 1);
     };
 
+    // Listen for the 'newNotification' event from the server
     socket.on('newNotification', handleNewNotification);
 
+    // Clean up the listener when the component unmounts
     return () => {
       socket.off('newNotification', handleNewNotification);
     };
-  }, [socket]);
+  }, [socket]); // Dependency array ensures this runs when the socket is ready
 
   const handleIconClick = async () => {
     setIsPanelOpen(prev => !prev);
@@ -66,7 +65,7 @@ const NotificationIcon = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUnreadCount(0);
-        // Also update the local state to reflect the read status
+        // Also update the local state to reflect the read status visually
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       } catch (error) {
         console.error("Failed to mark notifications as read", error);

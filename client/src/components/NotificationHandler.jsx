@@ -8,21 +8,23 @@ const NotificationHandler = () => {
   useEffect(() => {
     if (!socket) return;
 
-    const handleReportUpdate = (updatedReport) => {
-      console.log("Personal report update received:", updatedReport);
-      const message = `Status of '${updatedReport.title}' is now '${updatedReport.status}'.`;
-      // Show a success toast notification
-      toast.success(message, {
-        duration: 6000, // Make it last a bit longer
+    // 2. The handler now receives the 'notification' object from the event
+    const handleNewNotification = (notification) => {
+      console.log("Real-time toast notification received:", notification);
+      
+      // 3. Use the notification's 'body' for the toast message
+      toast.success(notification.body, {
+        duration: 6000,
+        icon: '🔔',
       });
     };
 
-    // Listen for events targeted specifically at this user
-    socket.on('reportUpdated', handleReportUpdate);
+    // 1. Listen for 'newNotification' instead of 'reportUpdated'
+    socket.on('newNotification', handleNewNotification);
 
     // Clean up the listener when the component unmounts
     return () => {
-      socket.off('reportUpdated', handleReportUpdate);
+      socket.off('newNotification', handleNewNotification);
     };
   }, [socket]);
 
