@@ -38,7 +38,7 @@ const Navbar = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <span className="text-xl font-bold text-slate-900">CivicVoice</span>
+                        <span className="text-xl font-bold text-slate-900">CityFix</span>
                     </Link>
 
                     {/* Desktop Navigation */}
@@ -51,7 +51,6 @@ const Navbar = () => {
                             <>
                                 <NavLink to="/dashboard" className={navLinkClasses}>Report Issue</NavLink>
                                 <NavLink to="/agent" className={navLinkClasses}>🤖 AI Assistant</NavLink>
-                                <NavLink to="/myreports" className={navLinkClasses}>My Reports</NavLink>
                                 <NavLink to="/profile" className={navLinkClasses}>Profile</NavLink>
                             </>
                         )}
