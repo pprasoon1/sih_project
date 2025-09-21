@@ -5,7 +5,6 @@ import { toast } from 'react-hot-toast';
 import { useSocket } from '../context/SocketContext';
 import AdminMap from "./AdminMap";
 import StatCards from './StatCards';
-import './AdminDashboard.css';
 import { FaArrowUp } from "react-icons/fa";
 
 const AdminDashboard = () => {

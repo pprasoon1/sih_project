@@ -3,7 +3,6 @@ import axios from 'axios';
 import { useSocket } from '../context/SocketContext';
 import { FaBell } from 'react-icons/fa';
 import NotificationPanel from './NotificationPanel';
-import './NotificationIcon.css';
 
 const NotificationIcon = () => {
   const [notifications, setNotifications] = useState([]);
@@ -11,12 +10,11 @@ const NotificationIcon = () => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const socket = useSocket();
 
-  // This effect runs ONCE on mount to fetch historical notifications
   useEffect(() => {
     const fetchNotifications = async () => {
       const token = localStorage.getItem('token');
       try {
-        const res = await axios.get('/api/notifications', {
+        const res = await axios.get('https://backend-sih-project-l67a.onrender.com/api/notifications', {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -35,37 +33,30 @@ const NotificationIcon = () => {
     fetchNotifications();
   }, []);
 
-  // --- THIS IS THE REAL-TIME LOGIC ---
-  // This effect listens for new notifications coming from the WebSocket
   useEffect(() => {
-    if (!socket) return; // Don't run if the socket isn't connected yet
+    if (!socket) return;
     
     const handleNewNotification = (newNotification) => {
-      // Add the new notification to the top of the list in real-time
       setNotifications(prev => [newNotification, ...prev]);
-      // Increment the unread count badge in real-time
       setUnreadCount(prev => prev + 1);
     };
 
-    // Listen for the 'newNotification' event from the server
     socket.on('newNotification', handleNewNotification);
 
-    // Clean up the listener when the component unmounts
     return () => {
       socket.off('newNotification', handleNewNotification);
     };
-  }, [socket]); // Dependency array ensures this runs when the socket is ready
+  }, [socket]);
 
   const handleIconClick = async () => {
     setIsPanelOpen(prev => !prev);
     if (!isPanelOpen && unreadCount > 0) {
       const token = localStorage.getItem('token');
       try {
-        await axios.post('/api/notifications/mark-read', {}, {
+        await axios.post('https://backend-sih-project-l67a.onrender.com/api/notifications/mark-read', {}, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUnreadCount(0);
-        // Also update the local state to reflect the read status visually
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       } catch (error) {
         console.error("Failed to mark notifications as read", error);
@@ -74,12 +65,24 @@ const NotificationIcon = () => {
   };
 
   return (
-    <div className="notification-wrapper">
-      <div className="notification-icon" onClick={handleIconClick}>
-        <FaBell />
-        {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
-      </div>
-      {isPanelOpen && <NotificationPanel notifications={notifications} />}
+    <div className="relative">
+      <button 
+        onClick={handleIconClick}
+        className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors"
+      >
+        <FaBell className="w-5 h-5" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </button>
+      {isPanelOpen && (
+        <NotificationPanel 
+          notifications={notifications} 
+          onClose={() => setIsPanelOpen(false)}
+        />
+      )}
     </div>
   );
 };

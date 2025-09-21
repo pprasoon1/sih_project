@@ -7,7 +7,6 @@ import { FaArrowUp, FaTag, FaUser, FaBuilding, FaClock } from 'react-icons/fa';
 import { format } from 'date-fns';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import './ReportDetailPage.css';
 
 // --- (Leaflet icon fix) ---
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';

@@ -1,7 +1,6 @@
 // components/PhotoUploader.jsx
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import './PhotoUploader.css';
 
 const PhotoUploader = ({ onUploadComplete, disabled }) => {
     const [file, setFile] = useState(null);
