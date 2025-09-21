@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './LocationButton.css';
 
 const LocationButton = ({ onLocationShare, disabled }) => {
     const [isGettingLocation, setIsGettingLocation] = useState(false);
