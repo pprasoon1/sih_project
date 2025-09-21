@@ -57,6 +57,11 @@ export const updateReportStatus = async (req, res) => {
     const originalStatus = report.status; // 👈 **FIX:** Declare before changing
     report.status = status;
 
+    io.to(report.createdBy.toString()).emit("reportStatusUpdated", {
+  reportId: report._id,
+  status: report.status,
+});
+
     if (status === 'resolved' && !report.resolvedAt) {
       report.resolvedAt = new Date();
     }
