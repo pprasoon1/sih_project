@@ -22,7 +22,16 @@ const AgentPage = () => {
       setAgentStats(response.data.data);
     } catch (error) {
       console.error('Failed to load agent stats:', error);
-      setError('Failed to load agent services. Please try again later.');
+      // Don't set error for 404 - agent services might not be deployed yet
+      if (error.response?.status === 404) {
+        console.log('Agent services not available on backend, using fallback mode');
+        setAgentStats({
+          database: { totalAgentReports: 0, recentAgentReports: 0 },
+          supportedImageTypes: ['jpg', 'jpeg', 'png', 'webp']
+        });
+      } else {
+        setError('Failed to load agent services. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }

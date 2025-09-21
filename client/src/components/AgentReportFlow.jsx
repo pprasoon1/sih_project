@@ -296,7 +296,25 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
       // Add media files
       reportData.mediaFiles.forEach((file) => formData.append('media', file));
 
-      const response = await agentAPI.createReport(formData);
+      let response;
+      try {
+        response = await agentAPI.createReport(formData);
+      } catch (agentError) {
+        // Fallback to regular reports API if agent API is not available
+        if (agentError.response?.status === 404) {
+          console.log('Agent API not available, falling back to regular reports API');
+          const regularAPI = axios.create({
+            baseURL: "https://backend-sih-project-l67a.onrender.com/api",
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              Authorization: `Bearer ${userToken}`,
+            }
+          });
+          response = await regularAPI.post('/reports', formData);
+        } else {
+          throw agentError;
+        }
+      }
 
       toast.success('AI-assisted report submitted successfully!');
       setCurrentStep(7); // Success screen
