@@ -1,8 +1,25 @@
 import axios from "axios";
 
-const API = axios.create({
-  baseURL: "https://backend-sih-project-l67a.onrender.com/api", // backend base url
-});
+const DEPLOYED_BASE = "https://backend-sih-project-l67a.onrender.com/api";
+const LOCAL_BASE = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || "http://localhost:5001/api";
+
+let API = axios.create({ baseURL: DEPLOYED_BASE });
+
+// Try to prefer local API if reachable; fall back to deployed (non-blocking).
+(async () => {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 800);
+    const res = await fetch(`${LOCAL_BASE.replace(/\/$/,'')}/auth/health`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (res.ok) {
+      API = axios.create({ baseURL: LOCAL_BASE });
+      console.info("Using local API base:", LOCAL_BASE);
+    }
+  } catch {
+    // remain on DEPLOYED_BASE
+  }
+})();
 
 // Attach token automatically
 API.interceptors.request.use((req) => {
