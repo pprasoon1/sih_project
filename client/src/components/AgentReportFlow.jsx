@@ -22,6 +22,36 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const [location, setLocation] = useState({ lat: null, lng: null });
 
+  // Auto-proceed timers to minimise user intervention
+  useEffect(() => {
+    if (flowState !== 'input') return;
+    if (!imageFile) return;
+    const hasText = Boolean((textInput || '').trim() || (voiceTranscript || '').trim());
+    if (!hasText) return;
+    if (isProcessing) return;
+
+    const t = setTimeout(() => {
+      // Safety re-checks before firing
+      if (flowState === 'input' && imageFile && ((textInput || '').trim() || (voiceTranscript || '').trim())) {
+        handleAnalyzeInputs();
+      }
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [flowState, imageFile, textInput, voiceTranscript, isProcessing]);
+
+  useEffect(() => {
+    if (flowState !== 'review') return;
+    if (isProcessing) return;
+    if (!reportData.title || !reportData.description) return;
+    // give user a moment to intervene
+    const t = setTimeout(() => {
+      if (flowState === 'review' && reportData.title && reportData.description) {
+        handleSubmitReport();
+      }
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [flowState, reportData.title, reportData.description, isProcessing]);
+
   // --- All your existing logic (useEffect, handleReset, handleAnalyzeInputs, handleSubmitReport, etc.) remains exactly the same. ---
   // --- No changes are needed for the component's internal logic. ---
   useEffect(() => { if (navigator.geolocation) { navigator.geolocation.getCurrentPosition( (position) => { setLocation({ lat: position.coords.latitude, lng: position.coords.longitude }); setReportData(prev => ({ ...prev, coordinates: [position.coords.longitude, position.coords.latitude] })); }, (error) => { console.error('Location error:', error); toast.error('Could not get location.'); } ); } }, []);
