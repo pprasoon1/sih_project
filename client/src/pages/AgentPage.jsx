@@ -17,20 +17,21 @@ const AgentPage = () => {
   }, []);
 
   const loadAgentStats = async () => {
+    // ... loading and error logic remains the same ...
+    setLoading(true);
+    setError(null);
     try {
       const response = await agentAPI.getStats();
       setAgentStats(response.data.data);
     } catch (error) {
       console.error('Failed to load agent stats:', error);
-      // Don't set error for 404 - agent services might not be deployed yet
       if (error.response?.status === 404) {
-        console.log('Agent services not available on backend, using fallback mode');
         setAgentStats({
           database: { totalAgentReports: 0, recentAgentReports: 0 },
-          supportedImageTypes: ['jpg', 'jpeg', 'png', 'webp']
+          supportedImageTypes: ['jpg', 'png', 'webp']
         });
       } else {
-        setError('Failed to load agent services. Please try again later.');
+        setError('Failed to connect to AI services.');
       }
     } finally {
       setLoading(false);
@@ -38,12 +39,9 @@ const AgentPage = () => {
   };
 
   const handleAgentComplete = (reportData) => {
-    console.log('Agent workflow completed:', reportData);
-    toast.success(`Report submitted successfully! +${reportData.pointsAwarded || 8} points`);
+    toast.success(`AI Report submitted! +${reportData.pointsAwarded || 8} points`);
     setShowAgent(false);
-    // Refresh stats
     loadAgentStats();
-    // Navigate to reports page
     navigate('/myreports');
   };
 
@@ -51,17 +49,12 @@ const AgentPage = () => {
     setShowAgent(false);
   };
 
-  const handleStartAgent = () => {
-    console.log('Starting agent workflow...');
-    setShowAgent(true);
-  };
-
   if (loading) {
     return (
-      <div className="agent-page">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading AI services...</p>
+      <div className="agent-page-container">
+        <div className="state-container">
+          <div className="spinner"></div>
+          <p>Connecting to AI Services...</p>
         </div>
       </div>
     );
@@ -69,11 +62,11 @@ const AgentPage = () => {
 
   if (error) {
     return (
-      <div className="agent-page">
-        <div className="error-container">
+      <div className="agent-page-container">
+        <div className="state-container error">
           <h2>⚠️ Service Unavailable</h2>
           <p>{error}</p>
-          <button onClick={loadAgentStats} className="retry-btn">
+          <button onClick={loadAgentStats} className="btn-primary">
             Try Again
           </button>
         </div>
@@ -82,86 +75,52 @@ const AgentPage = () => {
   }
 
   return (
-    <div className="agent-page">
-      <div className="agent-header">
-        <h1>🤖 AI-Powered Report Assistant</h1>
-        <p>Let our intelligent agent help you report civic issues quickly and accurately.</p>
-        
-        {agentStats && (
-          <div className="agent-stats">
-            <div className="stat-card">
-              <div className="stat-number">{agentStats.database?.totalAgentReports || 0}</div>
-              <div className="stat-label">AI Reports</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-number">{agentStats.database?.recentAgentReports || 0}</div>
-              <div className="stat-label">Last 24h</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-number">{agentStats.supportedImageTypes?.length || 0}</div>
-              <div className="stat-label">Supported Formats</div>
-            </div>
-          </div>
-        )}
-      </div>
+    <>
+      <div className="agent-page-container">
+        <div className="agent-hero-background"></div>
+        <main className="agent-main-content">
+          
+          {/* --- Header Card --- */}
+          <section className="content-card header-card">
+            <div className="header-badge">Intelligent Assistant</div>
+            <h1>The Future of Civic Reporting</h1>
+            <p>Use our advanced AI to analyze photos, transcribe your voice, and file detailed civic issue reports in seconds.</p>
+            {agentStats && (
+              <div className="header-stats-wrapper">
+                <StatCard number={agentStats.database?.totalAgentReports || 0} label="AI Reports Filed" />
+                <StatCard number={agentStats.database?.recentAgentReports || 0} label="In Last 24h" />
+                <StatCard number={agentStats.supportedImageTypes?.length || 0} label="Formats Supported" />
+              </div>
+            )}
+          </section>
 
-      <div className="agent-features">
-        <div className="feature-grid">
-          <div className="feature-card">
-            <div className="feature-icon">📸</div>
-            <h3>Smart Image Analysis</h3>
-            <p>Upload a photo and let AI automatically detect the issue type, generate descriptions, and suggest categories.</p>
-          </div>
-          
-          <div className="feature-card">
-            <div className="feature-icon">🎤</div>
-            <h3>Voice Recognition</h3>
-            <p>Describe your issue using voice input with automatic transcription and intelligent analysis.</p>
-          </div>
-          
-          <div className="feature-card">
-            <div className="feature-icon">📍</div>
-            <h3>Auto Location Detection</h3>
-            <p>Your location is automatically detected and included in the report for accurate positioning.</p>
-          </div>
-          
-          <div className="feature-card">
-            <div className="feature-icon">⏱️</div>
-            <h3>Guided Process</h3>
-            <p>Step-by-step guidance with auto-advance timers and pause/resume controls for convenience.</p>
-          </div>
-        </div>
-      </div>
+            {/* --- CTA Card --- */}
+          <section className="content-card cta-card">
+              <h3>Start Your AI-Powered Report</h3>
+              <p>Launch the intelligent assistant to get started. It's the fastest way to make a difference.</p>
+              <button className="start-agent-btn" onClick={() => setShowAgent(true)}>
+                <span>🚀</span> Launch AI Assistant
+              </button>
+              <button className="traditional-btn" onClick={() => navigate('/dashboard')}>
+                or use the Manual Form
+              </button>
+          </section>
+          {/* --- Features Card --- */}
+          <section className="content-card features-card">
+            <h2 className="section-title">A Smarter Way to Report</h2>
+            <div className="agent-features-grid">
+              <FeatureCard icon="📸" title="Smart Image Analysis" description="Upload a photo to automatically detect the issue and generate descriptions." />
+              <FeatureCard icon="🎤" title="Voice Recognition" description="Describe the issue with your voice for automatic transcription and analysis." />
+              <FeatureCard icon="📍" title="Auto-Location" description="Your location is automatically detected for accurate positioning." />
+            </div>
+          </section>
 
-      <div className="agent-actions">
-        <button 
-          className="start-agent-btn"
-          onClick={() => {
-            console.log('Button clicked!');
-            handleStartAgent();
-          }}
-        >
-          🚀 Start AI Assistant
-        </button>
-        
-        <div className="alternative-actions">
-          <p>Or use the traditional form:</p>
-          <button 
-            className="traditional-btn"
-            onClick={() => navigate('/dashboard')}
-          >
-            📝 Traditional Form
-          </button>
-        </div>
+        </main>
       </div>
 
       {showAgent && (
-        <div className="agent-modal" style={{backgroundColor: 'rgba(255, 0, 0, 0.5)'}}>
-          <div className="agent-modal-content" style={{backgroundColor: 'white', color: 'black', padding: '20px'}}>
-            {console.log('Rendering AgentReportFlow component, showAgent:', showAgent)}
-            <h2>Agent Modal Test</h2>
-            <p>If you can see this, the modal is working!</p>
-            <button onClick={handleAgentCancel}>Close</button>
+        <div className="agent-modal-overlay">
+          <div className="agent-modal-content">
             <AgentReportFlow 
               onComplete={handleAgentComplete}
               onCancel={handleAgentCancel}
@@ -169,8 +128,26 @@ const AgentPage = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
+
+// Helper components for a cleaner structure
+const StatCard = ({ number, label }) => (
+  <div className="stat-card">
+    <div className="stat-number">{number}</div>
+    <div className="stat-label">{label}</div>
+  </div>
+);
+
+const FeatureCard = ({ icon, title, description }) => (
+  <div className="feature-card">
+    <div className="feature-icon">{icon}</div>
+    <div className="feature-text">
+      <h3>{title}</h3>
+      <p>{description}</p>
+    </div>
+  </div>
+);
 
 export default AgentPage;
