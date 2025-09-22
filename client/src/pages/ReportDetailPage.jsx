@@ -133,9 +133,33 @@ const ReportDetailPage = () => {
             {/* ## Visual Evidence & Location - Horizontal Grid ## */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               
-              {/* Visual Evidence */}
+              {/* Visual & Audio Evidence */}
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="mb-6 text-xl font-bold text-slate-900">Visual Evidence</h3>
+                <h3 className="mb-6 text-xl font-bold text-slate-900">Evidence</h3>
+                
+                {/* Voice notes if present (prefer MIME-based from mediaInfo) */}
+                {(() => {
+                  const audioItems = Array.isArray(report.mediaInfo) && report.mediaInfo.length
+                    ? report.mediaInfo.filter(m => (m?.mimetype || '').startsWith('audio') || /^(mp3|m4a|wav|ogg)$/i.test(m?.format || ''))
+                    : (Array.isArray(report.mediaUrls) ? report.mediaUrls.filter(u => /\.(mp3|m4a|wav|webm|ogg)(\?|$)/i.test(u)).map(u => ({ url: u })) : []);
+                  if (!audioItems || audioItems.length === 0) return null;
+                  return (
+                    <div className="mb-6">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-slate-700">Voice Notes</h4>
+                        <span className="rounded-full bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700">Audio</span>
+                      </div>
+                      <div className="space-y-3">
+                        {audioItems.map((item, idx) => (
+                          <audio key={idx} controls className="w-full">
+                            <source src={item.url} />
+                            Your browser does not support the audio element.
+                          </audio>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
                 
                 {/* Before Photo */}
                 <div className="mb-6">

@@ -21,6 +21,10 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
   const [textInput, setTextInput] = useState('');
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const [location, setLocation] = useState({ lat: null, lng: null });
+  const [agentServiceOk, setAgentServiceOk] = useState(null);
+  const [speakEnabled, setSpeakEnabled] = useState(false);
+  const [autoMode, setAutoMode] = useState(true);
+  const [reviewCountdown, setReviewCountdown] = useState(0);
 
   // Auto-proceed timers to minimise user intervention
   useEffect(() => {
@@ -54,20 +58,93 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
 
   // --- All your existing logic (useEffect, handleReset, handleAnalyzeInputs, handleSubmitReport, etc.) remains exactly the same. ---
   // --- No changes are needed for the component's internal logic. ---
-  useEffect(() => { if (navigator.geolocation) { navigator.geolocation.getCurrentPosition( (position) => { setLocation({ lat: position.coords.latitude, lng: position.coords.longitude }); setReportData(prev => ({ ...prev, coordinates: [position.coords.longitude, position.coords.latitude] })); }, (error) => { console.error('Location error:', error); toast.error('Could not get location.'); } ); } }, []);
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+          setReportData(prev => ({ ...prev, coordinates: [position.coords.longitude, position.coords.latitude] }));
+        },
+        (error) => {
+          console.error('Location error:', error);
+          toast.error('Could not get location.');
+        }
+      );
+    }
+    // Agent health
+    agentAPI.healthCheck().then(() => setAgentServiceOk(true)).catch(() => setAgentServiceOk(false));
+  }, []);
   const handleReset = () => { setFlowState('input'); setIsProcessing(false); setReportData({ title: '', description: '', category: 'pothole', mediaFiles: [], coordinates: location.lng ? [location.lng, location.lat] : null, }); setImageFile(null); setTextInput(''); setVoiceTranscript(''); };
+  const handleChangePhoto = () => { setImageFile(null); setReportData(prev => ({ ...prev, mediaFiles: [] })); };
   const handleImageCapture = (file) => { setImageFile(file); setReportData(prev => ({ ...prev, mediaFiles: [file] })); };
-  const handleAnalyzeInputs = async () => { if (!imageFile || !(textInput.trim() || voiceTranscript.trim())) { toast.error('Please provide a photo and a description.'); return; } setFlowState('analyzing'); setIsProcessing(true); const combinedText = textInput.trim() || voiceTranscript.trim(); try { const [imageAnalysis, textAnalysisResp] = await Promise.all([ analyzeImage(imageFile), agentAPI.analyzeText(combinedText).then(r => r?.data?.data || {}).catch(() => ({})) ]); const merged = mergeAnalyses(imageAnalysis, textAnalysisResp, combinedText); setReportData(prev => ({ ...prev, ...merged })); toast.success('AI analysis complete. Please review.'); setFlowState('review'); } catch (err) { toast.error('AI analysis failed. Please fill details manually.'); setReportData(prev => ({ ...prev, title: extractTitleFromTranscript(combinedText), description: combinedText || prev.description, })); setFlowState('review'); } finally { setIsProcessing(false); } };
+  const handleAnalyzeInputs = async () => {
+    if (!imageFile || !(textInput.trim() || voiceTranscript.trim())) { toast.error('Please provide a photo and a description.'); return; }
+    setFlowState('analyzing'); setIsProcessing(true);
+    const combinedText = textInput.trim() || voiceTranscript.trim();
+    try {
+      const [imageAnalysis, textAnalysisResp] = await Promise.all([
+        analyzeImage(imageFile),
+        agentAPI.analyzeText(combinedText).then(r => r?.data?.data || {}).catch(() => ({}))
+      ]);
+      const merged = mergeAnalyses(imageAnalysis, textAnalysisResp, combinedText);
+      setReportData(prev => ({ ...prev, ...merged }));
+      toast.success('AI analysis complete. Please review.');
+      setFlowState('review');
+    } catch (err) {
+      toast.error('AI analysis failed. Please fill details manually.');
+      setReportData(prev => ({ ...prev, title: extractTitleFromTranscript(combinedText), description: combinedText || prev.description, }));
+      setFlowState('review');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
   const handleSubmitReport = async () => { if (!reportData.title || !reportData.description) { toast.error('Title and description are required.'); return; } setFlowState('submitting'); setIsProcessing(true); const userToken = localStorage.getItem('token'); if (!userToken) { toast.error('You must be logged in.'); setIsProcessing(false); setFlowState('review'); return; } try { const formData = new FormData(); formData.append('title', reportData.title); formData.append('description', reportData.description); formData.append('category', reportData.category); formData.append('coordinates', JSON.stringify(reportData.coordinates)); formData.append('processingMethod', 'agentic'); if (reportData.confidence) formData.append('confidence', reportData.confidence); if (reportData.severity) formData.append('severity', reportData.severity); if (reportData.suggestedPriority) formData.append('suggestedPriority', reportData.suggestedPriority); reportData.mediaFiles.forEach((file) => formData.append('media', file)); let response; try { response = await agentAPI.createReport(formData); } catch (agentError) { if (agentError.response?.status === 404) { const regularAPI = axios.create({ baseURL: "https://backend-sih-project-l67a.onrender.com/api", headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${userToken}` } }); response = await regularAPI.post('/reports', formData); } else { throw agentError; } } toast.success('Report submitted successfully!'); setFlowState('success'); if (onComplete) { const payload = response?.data?.data || response?.data; setTimeout(() => onComplete(payload), 3000); } } catch (error) { toast.error('Failed to submit report.'); setFlowState('review'); } finally { setIsProcessing(false); } };
-  const analyzeImage = async (file) => { const formData = new FormData(); formData.append('image', file); const response = await agentAPI.analyzeImage(formData); return response.data.data; };
+  const analyzeImage = async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await agentAPI.analyzeImage(formData);
+    return response.data.data;
+  };
   const mergeAnalyses = (img, txt, fallbackText) => { const severityRank = { low: 1, medium: 2, high: 3, critical: 4 }; const pick = (a, b) => (a !== undefined && a !== null ? a : b); const title = pick(txt?.title, pick(img?.title, extractTitleFromTranscript(fallbackText || 'Issue Report'))); const description = pick(txt?.description, pick(fallbackText, img?.description)); const imgConf = typeof img?.confidence === 'number' ? img.confidence : 0; const txtConf = typeof txt?.confidence === 'number' ? txt.confidence : 0; let category = img?.category || txt?.category || 'other'; if (txt?.category && img?.category && txt?.category !== img?.category) { category = txtConf >= imgConf ? txt.category : img.category; } else if (txt?.category) { category = txt.category; } const confidence = Math.max(imgConf, txtConf || 0); const imgSev = img?.severity || 'medium'; const txtSev = txt?.severity || imgSev; const severity = severityRank[txtSev] >= severityRank[imgSev] ? txtSev : imgSev; const priorityOrder = { low: 1, medium: 2, high: 3 }; const imgPr = img?.suggestedPriority || 'medium'; const txtPr = txt?.suggestedPriority || imgPr; const suggestedPriority = (priorityOrder[txtPr] >= priorityOrder[imgPr]) ? txtPr : imgPr; return { title, description, category, confidence, severity, suggestedPriority }; };
   const extractTitleFromTranscript = (text) => text ? (text.length > 50 ? text.substring(0, 50) + '...' : text) : 'Issue Report';
+  const speak = (text) => {
+    if (!speakEnabled || typeof window === 'undefined') return;
+    try {
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.rate = 1.05; utt.pitch = 1;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utt);
+    } catch { /* ignore */ }
+  };
+  useEffect(() => {
+    if (flowState === 'input') speak('Please add a photo of the issue, then speak or type a short description.');
+    if (flowState === 'review') speak('Please review the generated details. I will submit shortly.');
+    if (flowState === 'submitting') speak('Submitting your report.');
+    if (flowState === 'success') speak('Your report has been submitted. Thank you!');
+  }, [flowState, speakEnabled]);
   const handleEditField = (field, value) => setReportData(prev => ({ ...prev, [field]: value }));
   const handleAddMedia = (files) => setReportData(prev => ({ ...prev, mediaFiles: [...prev.mediaFiles, ...Array.from(files)] }));
   
   // The main change is in the JSX structure and class names below
   return (
     <div className="agent-flow-container">
+      {/* Assistant header like Ola-style booking status */}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 12px',borderBottom:'1px solid #eee'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <span style={{width:10,height:10,borderRadius:6,background: agentServiceOk===false?'#e53e3e':agentServiceOk===true?'#22c55e':'#a3a3a3'}}></span>
+          <span style={{fontSize:13,color:'#444'}}>
+            {agentServiceOk===true?'AI Assistant: Online':agentServiceOk===false?'AI Assistant: Degraded':'Checking AI services…'}
+          </span>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:16}}>
+          <label style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:13,color:'#444'}}>
+            <input type="checkbox" checked={autoMode} onChange={(e)=>setAutoMode(e.target.checked)} /> Auto mode
+          </label>
+          <label style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:13,color:'#444'}}>
+            <input type="checkbox" checked={speakEnabled} onChange={(e)=>setSpeakEnabled(e.target.checked)} /> Voice guidance
+          </label>
+        </div>
+      </div>
       <div className={`agent-flow-view ${flowState === 'input' ? 'is-active' : ''}`}>
         <div className="view-header">
           <h1>New Report</h1>
@@ -79,6 +156,11 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
             <div className="step-content">
               <label>Provide a photo</label>
               <ImageCapture onImageCapture={handleImageCapture} />
+              {imageFile && (
+                <div style={{marginTop:8}}>
+                  <button className="btn btn-secondary" onClick={handleChangePhoto}>Change Photo</button>
+                </div>
+              )}
             </div>
           </div>
           <div className="form-step">
@@ -141,6 +223,11 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
       {['analyzing', 'submitting', 'success'].includes(flowState) && (
         <div className="agent-flow-overlay is-active">
           <div className="overlay-content">
+            {flowState !== 'success' && (
+              <div style={{width:'100%',height:4,background:'#eee',borderRadius:2,overflow:'hidden',marginBottom:12}}>
+                <div style={{width:'60%',height:'100%',background:'#6366f1',animation:'progressPulse 1.2s infinite'}}></div>
+              </div>
+            )}
             {flowState === 'success' ? (
               <>
                 <IconCheckCircle />
