@@ -1,6 +1,7 @@
 import Report from "../models/Report.js";
 import Department from "../models/Department.js";
 import Update from '../models/Update.js';
+import User from "../models/User.js";
 import { createAndEmitNotification } from '../services/notificationService.js';
 import { sendEscalationEmail } from '../config/mailer.js';
 
@@ -54,53 +55,68 @@ export const updateReportStatus = async (req, res) => {
     const report = await Report.findById(req.params.id);
     if (!report) return res.status(404).json({ message: "Report not found" });
 
-    const originalStatus = report.status; // 👈 **FIX:** Declare before changing
+    const originalStatus = report.status;
     report.status = status;
 
-    io.to(report.createdBy.toString()).emit("reportStatusUpdated", {
-  reportId: report._id,
-  status: report.status,
-});
-
-    if (status === 'resolved' && !report.resolvedAt) {
+    // Transition to resolved: set timestamp once on first resolve
+    if (status === 'resolved' && originalStatus !== 'resolved' && !report.resolvedAt) {
       report.resolvedAt = new Date();
     }
+
     await report.save();
 
-    // 👇 Add this block to award points for resolution
-    if (status === 'resolved' && report.status !== 'resolved') {
-      await User.findByIdAndUpdate(report.reporterId, { $inc: { points: 25 } }); // Award 25 bonus points
-
-        // Check for "Problem Solver" badges
-      const resolvedCount = await Report.countDocuments({ reporterId: report.reporterId, status: 'resolved' });
-      if (resolvedCount === 1) {
-        await User.findByIdAndUpdate(report.reporterId, { $addToSet: { badges: 'problem_solver_1' } });
-      } else if (resolvedCount === 5) {
-        await User.findByIdAndUpdate(report.reporterId, { $addToSet: { badges: 'problem_solver_5' } });
+    // Award points when transitioning to resolved for the first time
+    if (status === 'resolved' && originalStatus !== 'resolved') {
+      try {
+        await User.findByIdAndUpdate(report.reporterId, { $inc: { points: 25 } });
+        const resolvedCount = await Report.countDocuments({ reporterId: report.reporterId, status: 'resolved' });
+        if (resolvedCount === 1) {
+          await User.findByIdAndUpdate(report.reporterId, { $addToSet: { badges: 'problem_solver_1' } });
+        } else if (resolvedCount === 5) {
+          await User.findByIdAndUpdate(report.reporterId, { $addToSet: { badges: 'problem_solver_5' } });
+        }
+      } catch (awardErr) {
+        console.warn('Points/badges award failed:', awardErr?.message || awardErr);
       }
     }
 
-    report.status = status;
-    
+    // Log update history
     await Update.create({
       report: report._id,
-      user: req.user._id,
+      user: req.user?._id || null,
       changeType: 'status_change',
       fromValue: originalStatus,
       toValue: report.status,
     });
-    
-    const populatedReport = await Report.findById(report._id).populate('reporterId').populate('assignedDept');
-    if (populatedReport.reporterId) {
+
+    // Notify reporter (socket + persistent notification)
+    const populatedReport = await Report.findById(report._id)
+      .populate('reporterId')
+      .populate('assignedDept');
+
+    // Best-effort socket room emit if available
+    try {
+      if (req.io && populatedReport?.reporterId?._id) {
+        req.io.to(populatedReport.reporterId._id.toString()).emit('reportStatusUpdated', {
+          reportId: populatedReport._id,
+          status: populatedReport.status,
+        });
+      }
+    } catch (emitErr) {
+      console.warn('Socket emit failed:', emitErr?.message || emitErr);
+    }
+
+    if (populatedReport?.reporterId) {
       const { _id, name } = populatedReport.reporterId;
       const title = `Status Updated: ${populatedReport.title}`;
       const body = `Hi ${name}, your report is now "${populatedReport.status}".`;
       await createAndEmitNotification(req.io, _id, title, body, populatedReport._id);
     }
-    res.json(populatedReport);
+
+    return res.json(populatedReport);
   } catch (error) {
-    console.error("❌ Error in updateReportStatus:", error.message);
-    res.status(500).json({ message: "Server Error" });
+    console.error("❌ Error in updateReportStatus:", error);
+    return res.status(500).json({ message: "Server Error" });
   }
 };
 

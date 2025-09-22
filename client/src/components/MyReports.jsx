@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import API from "../api/axios";
+import ReportStatusProgress from "./ReportStatusProgress.jsx";
 
 const MyReports = () => {
   const [reports, setReports] = useState([]);
@@ -16,11 +18,7 @@ const MyReports = () => {
       }
 
       try {
-        const res = await axios.get("https://backend-sih-project-l67a.onrender.com/api/reports/my", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await API.get("/reports/my");
         setReports(res.data);
       } catch (err) {
         console.error("❌ Error fetching reports:", err);
@@ -140,8 +138,17 @@ const MyReports = () => {
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{report.title}</h3>
                     <p className="text-gray-600 mb-4 line-clamp-3">{report.description}</p>
 
+                    {/* Progress Timeline */}
+                    <div className="mt-4">
+                      <ReportStatusProgress 
+                        status={report.status}
+                        createdAt={report.createdAt}
+                        resolvedAt={report.resolvedAt}
+                      />
+                    </div>
+
                     {/* Stats */}
-                    <div className="flex items-center space-x-6 text-sm text-gray-500">
+                    <div className="mt-4 flex items-center space-x-6 text-sm text-gray-500">
                       <div className="flex items-center space-x-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />

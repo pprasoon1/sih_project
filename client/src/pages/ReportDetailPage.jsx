@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API from '../api/axios';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import { toast } from 'react-hot-toast';
 import { FaArrowUp, FaTag, FaUser, FaBuilding, FaClock, FaArrowLeft, FaExclamationTriangle } from 'react-icons/fa';
@@ -36,17 +37,16 @@ const ReportDetailPage = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    const headers = { Authorization: `Bearer ${token}` };
     try {
       const [detailsRes, deptsRes] = await Promise.all([
-        axios.get(`https://backend-sih-project-l67a.onrender.com/api/admin/reports/${reportId}`, { headers }),
-        axios.get('https://backend-sih-project-l67a.onrender.com/api/admin/departments', { headers })
+        API.get(`/admin/reports/${reportId}`),
+        API.get('/admin/departments')
       ]);
       setReport(detailsRes.data.report);
       setHistory(detailsRes.data.history);
-      setDepartments(deptsRes.data);
-    } catch {
+      setDepartments(Array.isArray(deptsRes.data) ? deptsRes.data : []);
+    } catch (e) {
+      console.error('Failed to fetch admin report/departments:', e);
       toast.error("Failed to fetch details.");
     } finally {
       setLoading(false);
@@ -58,9 +58,8 @@ const ReportDetailPage = () => {
   }, [fetchData]);
 
   const handleStatusChange = async (newStatus) => {
-    const token = localStorage.getItem('token');
     try {
-      await axios.put(`https://backend-sih-project-l67a.onrender.com/api/admin/reports/${reportId}/status`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } });
+      await API.put(`/admin/reports/${reportId}/status`, { status: newStatus });
       toast.success("Status updated!");
       fetchData();
     } catch { toast.error("Failed to update status."); }
@@ -68,9 +67,8 @@ const ReportDetailPage = () => {
 
   const handleAssignDept = async (departmentId) => {
     if (!departmentId) return;
-    const token = localStorage.getItem('token');
     try {
-      await axios.put(`https://backend-sih-project-l67a.onrender.com/api/admin/reports/${reportId}/assign`, { departmentId }, { headers: { Authorization: `Bearer ${token}` } });
+      await API.put(`/admin/reports/${reportId}/assign`, { departmentId });
       toast.success("Department assigned!");
       fetchData();
     } catch { toast.error("Failed to assign department."); }
@@ -79,9 +77,8 @@ const ReportDetailPage = () => {
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
-    const token = localStorage.getItem('token');
     try {
-      await axios.post(`https://backend-sih-project-l67a.onrender.com/api/reports/${reportId}/comments`, { text: newComment }, { headers: { Authorization: `Bearer ${token}` } });
+      await API.post(`/reports/${reportId}/comments`, { text: newComment });
       toast.success("Comment posted!");
       setNewComment("");
       fetchData();
@@ -89,10 +86,9 @@ const ReportDetailPage = () => {
   };
 
   const handleEscalate = async () => {
-    const token = localStorage.getItem('token');
     const toastId = toast.loading('Escalating report...');
     try {
-      await axios.post(`https://backend-sih-project-l67a.onrender.com/api/admin/reports/${reportId}/escalate`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await API.post(`/admin/reports/${reportId}/escalate`);
       toast.success('Report successfully escalated.', { id: toastId });
       fetchData();
     } catch { toast.error('Failed to escalate report.', { id: toastId }); }
