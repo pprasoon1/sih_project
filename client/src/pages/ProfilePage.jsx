@@ -161,7 +161,7 @@ const ProfilePage = () => {
                   <FaListAlt className="h-5 w-5 text-slate-400" />
                   <h2 className="text-lg font-bold text-slate-800">Your Contributions</h2>
                 </div>
-                <button className="flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 sm:px-4">
+                <button className="flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 sm:px-4" onClick={() => window.location.href = '/dashboard'}>
                   <FaPlus className="h-3 w-3" />
                   <span className="hidden sm:inline">New Report</span>
                 </button>
