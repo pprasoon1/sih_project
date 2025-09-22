@@ -12,21 +12,22 @@ const AnalyticsPage = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchChartData = async () => {
+    const fetchData = async () => {
       const token = localStorage.getItem('token');
       try {
-        const res = await axios.get('https://backend-sih-project-l67a.onrender.com/api/analytics/charts', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setChartData(res.data);
+        const [charts, extended] = await Promise.all([
+          axios.get('https://backend-sih-project-l67a.onrender.com/api/analytics/charts', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('https://backend-sih-project-l67a.onrender.com/api/analytics/extended', { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+        setChartData({ ...charts.data, extended: extended.data });
       } catch (error) {
-        console.error("Failed to fetch chart data", error);
+        console.error("Failed to fetch analytics data", error);
         setError('Failed to load analytics data');
       } finally {
         setLoading(false);
       }
     };
-    fetchChartData();
+    fetchData();
   }, []);
 
   if (loading) {
@@ -294,10 +295,35 @@ const AnalyticsPage = () => {
           {/* Recent Activity */}
           <div className="card">
             <div className="card-body">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                  <span className="text-sm font-medium text-blue-900">Reports This Month</span>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Department Leaderboard</h3>
+              <div className="space-y-3">
+                {chartData.extended?.perDepartment?.slice(0, 8).map((d, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-emerald-700">{idx + 1}</span>
+                      </div>
+                      <span className="font-medium text-gray-900">{d.name}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-600">{d.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Geo Heat (top cells) */}
+          <div className="card">
+            <div className="card-body">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Hotspots (Top Cells)</h3>
+              <div className="space-y-2 text-sm">
+                {chartData.extended?.heatBins?.slice(0, 10).map((b, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <span className="text-gray-700">{b._id.lat.toFixed(2)}, {b._id.lng.toFixed(2)}</span>
+                    <span className="font-semibold text-gray-900">{b.count}</span>
+                  </div>
+                ))}
+              </div>
                   <span className="text-lg font-bold text-blue-600">{chartData.monthlyReports || 0}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
