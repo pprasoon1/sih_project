@@ -10,6 +10,7 @@ const FeedPage = () => {
   const [error, setError] = useState(null);
   const [modalReportId, setModalReportId] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [fallbackMode, setFallbackMode] = useState(false);
   
   // Memoize user object to prevent re-parsing on every render
   const user = React.useMemo(() => JSON.parse(localStorage.getItem('user')), []);
@@ -65,7 +66,7 @@ const FeedPage = () => {
         setReports(res.data);
       } catch (apiError) {
         console.error("Primary feed fetch failed, attempting fallback.", apiError);
-        // Fallback sequence: nearby (with coords) -> general feed
+        // Fallback sequence: nearby (with coords) -> general feed -> my reports (last resort)
         try {
           if (coords) {
             const res2 = await API.get(`/reports/nearby?lng=${coords.lng}&lat=${coords.lat}`);
@@ -80,8 +81,15 @@ const FeedPage = () => {
             const res3 = await API.get('/reports/feed');
             setReports(Array.isArray(res3.data) ? res3.data : []);
           } catch (fallbackError2) {
-            console.error('All feed fetch attempts failed.', fallbackError2);
-            setError('Failed to load the community feed. Please try again later.');
+            console.warn('General feed failed, attempting personal feed as last resort.', fallbackError2);
+            try {
+              const res4 = await API.get('/reports/my');
+              setReports(Array.isArray(res4.data) ? res4.data : []);
+              setFallbackMode(true);
+            } catch (fallbackError3) {
+              console.error('All feed fetch attempts failed.', fallbackError3);
+              setError('Failed to load the community feed. Please try again later.');
+            }
           }
         }
       } finally {
@@ -196,6 +204,11 @@ const FeedPage = () => {
       <header className="feed-header">
         <h1>Community Feed</h1>
         <p>Stay updated with issues and progress in Greater Noida.</p>
+        {fallbackMode && (
+          <div className="notice-banner" style={{marginTop: 12}}>
+            Showing your reports while the city-wide feed is temporarily unavailable.
+          </div>
+        )}
       </header>
 
       <div className="filter-tabs">

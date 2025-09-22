@@ -104,23 +104,48 @@ export const getReportsNearby = async (req, res) => {
         return res.status(400).json({ message: "Longitude and latitude are required." });
     }
 
-    const reports = await Report.find({
-      ...filter,
-      location: { 
-        $near: { 
-          $geometry: { 
-            type: "Point", 
-            coordinates: [parseFloat(lng), parseFloat(lat)] 
-          }, 
-          $maxDistance: 2000 // 2km
-        } 
-      },
-    });
+    const lngNum = parseFloat(lng);
+    const latNum = parseFloat(lat);
 
-    res.json(reports);
+    if (!Number.isFinite(lngNum) || !Number.isFinite(latNum)) {
+      return res.status(400).json({ message: "Invalid coordinates." });
+    }
+
+    try {
+      const reports = await Report.find({
+        ...filter,
+        location: { 
+          $near: { 
+            $geometry: { type: "Point", coordinates: [lngNum, latNum] }, 
+            $maxDistance: 2000 // 2km
+          } 
+        },
+      })
+        .populate('reporterId', 'name')
+        .sort({ upvoteCount: -1, createdAt: -1 })
+        .limit(50);
+
+      return res.json(reports);
+    } catch (geoErr) {
+      console.warn('Geo nearby query failed; falling back to trending.', geoErr?.message || geoErr);
+      const fallback = await Report.find(filter)
+        .populate('reporterId', 'name')
+        .sort({ upvoteCount: -1, createdAt: -1 })
+        .limit(50);
+      return res.json(fallback);
+    }
   } catch(error) {
     console.error("❌ Error in getReportsNearby:", error);
-    res.status(500).json({ message: "Error fetching nearby reports." });
+    // Last resort fallback
+    try {
+      const fallback = await Report.find({})
+        .populate('reporterId', 'name')
+        .sort({ createdAt: -1 })
+        .limit(20);
+      return res.json(fallback);
+    } catch (inner) {
+      return res.status(500).json({ message: "Error fetching nearby reports." });
+    }
   }
 };
 
@@ -140,23 +165,27 @@ export const getReportsForFeed = async (req, res) => {
       const radiusNum = parseInt(radius, 10) || 20000;
 
       if (Number.isFinite(lngNum) && Number.isFinite(latNum)) {
-        // Location-based feed
-        reports = await Report.find({
-          ...filter,
-          location: {
-            $near: {
-              $geometry: { type: "Point", coordinates: [lngNum, latNum] },
-              $maxDistance: radiusNum,
+        try {
+          // Location-based feed
+          reports = await Report.find({
+            ...filter,
+            location: {
+              $near: {
+                $geometry: { type: "Point", coordinates: [lngNum, latNum] },
+                $maxDistance: radiusNum,
+              },
             },
-          },
-        })
-          .populate('reporterId', 'name')
-          .sort({ upvoteCount: -1, createdAt: -1 })
-          .limit(50);
+          })
+            .populate('reporterId', 'name')
+            .sort({ upvoteCount: -1, createdAt: -1 })
+            .limit(50);
+        } catch (geoErr) {
+          console.warn('Geo feed query failed; falling back to trending.', geoErr?.message || geoErr);
+        }
       }
     }
 
-    // Fallback: trending/recent feed (no or invalid coordinates)
+    // Fallback: trending/recent feed (no or invalid coordinates or geo error)
     if (!reports) {
       reports = await Report.find({
         ...filter,
@@ -169,7 +198,16 @@ export const getReportsForFeed = async (req, res) => {
     res.json(reports);
   } catch (error) {
     console.error("Error in getReportsForFeed:", error);
-    res.status(500).json({ message: `Error fetching report feed. ${error.message}` });
+    // As a last resort, attempt to return something rather than 500
+    try {
+      const fallback = await Report.find({})
+        .populate('reporterId', 'name')
+        .sort({ createdAt: -1 })
+        .limit(20);
+      return res.json(fallback);
+    } catch (inner) {
+      return res.status(500).json({ message: `Error fetching report feed. ${error.message}` });
+    }
   }
 };
 
