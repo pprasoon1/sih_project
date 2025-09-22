@@ -9,23 +9,27 @@ import './AgentReportFlow.css';
 const AgentReportFlow = ({ onComplete, onCancel }) => {
   // State management
   const [currentStep, setCurrentStep] = useState(1);
-  const [inputType, setInputType] = useState(null); // 'image', 'voice', 'text'
   const [countdown, setCountdown] = useState(5);
   const [isPaused, setIsPaused] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  
+
   // Report data
   const [reportData, setReportData] = useState({
     title: '',
     description: '',
     category: 'pothole',
     mediaFiles: [],
-    coordinates: null
+    coordinates: null,
+    confidence: undefined,
+    severity: undefined,
+    suggestedPriority: undefined,
   });
-  
-  // Input state for text mode
+
+  // First-step inputs (combined)
+  const [imageFile, setImageFile] = useState(null);
   const [textInput, setTextInput] = useState('');
-  
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+
   // Location data
   const [location, setLocation] = useState({
     lat: null,
@@ -48,7 +52,7 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
       // Only auto-advance up to step 6
       handleAutoAdvance();
     }
-    
+
     return () => {
       if (countdownRef.current) {
         clearTimeout(countdownRef.current);
@@ -94,6 +98,8 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
   };
 
   const handleAutoAdvance = () => {
+    // Do not auto-advance on the first step (needs user inputs)
+    if (currentStep === 1) return;
     if (currentStep < 6) {
       setCurrentStep(prev => prev + 1);
       setCountdown(5);
@@ -106,7 +112,6 @@ const AgentReportFlow = ({ onComplete, onCancel }) => {
 
 const handleRetry = () => {
     setCurrentStep(1);
-    setInputType(null);
     setCountdown(5);
     setIsPaused(false);
     hasSubmittedRef.current = false;
@@ -115,105 +120,74 @@ const handleRetry = () => {
       description: '',
       category: 'pothole',
       mediaFiles: [],
-      coordinates: null
+      coordinates: null,
+      confidence: undefined,
+      severity: undefined,
+      suggestedPriority: undefined,
     });
+    setImageFile(null);
     setTextInput('');
+    setVoiceTranscript('');
   };
 
   const handleCancel = () => {
     if (onCancel) onCancel();
   };
 
-  // Step 1: Input modality selection
-  const handleInputTypeSelect = (type) => {
-    setInputType(type);
-    setCurrentStep(2);
-    setCountdown(5);
+  // Step 1: Combined inputs
+  const handleImageCapture = (file) => {
+    setImageFile(file);
+    // Also attach to report media to be sent later
+    setReportData(prev => ({ ...prev, mediaFiles: [file] }));
   };
 
-  // Step 2: Process input based on type
-  const handleImageCapture = async (file) => {
+  const handleVoiceTranscript = (transcript) => {
+    setVoiceTranscript(transcript || '');
+  };
+
+  const handleFirstStepContinue = async () => {
+    if (!imageFile || !(textInput.trim() || voiceTranscript.trim())) {
+      toast.error('Please provide an image and a short text/voice description.');
+      return;
+    }
+
+    const combinedText = textInput.trim() || voiceTranscript.trim();
     setIsProcessing(true);
-    setReportData(prev => ({
-      ...prev,
-      mediaFiles: [file]
-    }));
-    
     try {
-      // AI-powered image analysis
-      const analysis = await analyzeImage(file);
+      const [imageAnalysis, textAnalysisResp] = await Promise.all([
+        analyzeImage(imageFile),
+        agentAPI.analyzeText(combinedText).then(r => r?.data?.data || {}).catch(() => ({})),
+      ]);
+
+      const merged = mergeAnalyses(imageAnalysis, textAnalysisResp, combinedText);
       setReportData(prev => ({
         ...prev,
-        title: analysis.title || 'Issue detected in image',
-        description: analysis.description || 'Issue identified through image analysis',
-        category: analysis.category || 'other'
+        title: merged.title,
+        description: merged.description,
+        category: merged.category,
+        confidence: merged.confidence,
+        severity: merged.severity,
+        suggestedPriority: merged.suggestedPriority,
       }));
-      
-      toast.success('Image analyzed successfully!');
+
+      toast.success('Details inferred from your image and description!');
+      // Jump to category selection
       setCurrentStep(3);
       setCountdown(5);
-    } catch (error) {
-      console.error('Image analysis error:', error);
-      toast.error('Failed to analyze image. Please try again.');
-      setCurrentStep(3); // Still proceed to next step
+    } catch (err) {
+      console.error('Combined analysis failed:', err);
+      toast.error('Could not analyze inputs. You can edit details in the next step.');
+      // Fallback minimal population
+      setReportData(prev => ({
+        ...prev,
+        title: extractTitleFromTranscript(combinedText),
+        description: combinedText || prev.description,
+      }));
+      setCurrentStep(3);
       setCountdown(5);
     } finally {
       setIsProcessing(false);
     }
-  };
-
-const handleVoiceTranscript = async (transcript) => {
-    try {
-      // Analyze the transcript using AI
-      const resp = await agentAPI.analyzeText(transcript);
-      const analysis = resp?.data?.data || {};
-      setReportData(prev => ({
-        ...prev,
-        title: analysis.title || extractTitleFromTranscript(transcript),
-        description: analysis.description || transcript,
-        category: analysis.category || prev.category,
-        confidence: analysis.confidence,
-        severity: analysis.severity,
-        suggestedPriority: analysis.suggestedPriority
-      }));
-    } catch (error) {
-      console.error('Voice analysis error:', error);
-      // Fallback to simple processing
-      setReportData(prev => ({
-        ...prev,
-        title: extractTitleFromTranscript(transcript),
-        description: transcript
-      }));
-    }
-    setCurrentStep(3);
-    setCountdown(5);
-  };
-
-const handleTextInput = async (text) => {
-    try {
-      // Analyze the text using AI
-      const resp = await agentAPI.analyzeText(text);
-      const analysis = resp?.data?.data || {};
-      setReportData(prev => ({
-        ...prev,
-        title: analysis.title || extractTitleFromTranscript(text),
-        description: analysis.description || text,
-        category: analysis.category || prev.category,
-        confidence: analysis.confidence,
-        severity: analysis.severity,
-        suggestedPriority: analysis.suggestedPriority
-      }));
-    } catch (error) {
-      console.error('Text analysis error:', error);
-      // Fallback to simple processing
-      setReportData(prev => ({
-        ...prev,
-        title: extractTitleFromTranscript(text),
-        description: text
-      }));
-    }
-    setCurrentStep(3);
-    setCountdown(5);
   };
 
   // AI Image Analysis using backend API
@@ -239,8 +213,41 @@ const handleTextInput = async (text) => {
     }
   };
 
+  // Merge results from image and text analyses
+  const mergeAnalyses = (img, txt, fallbackText) => {
+    const severityRank = { low: 1, medium: 2, high: 3, critical: 4 };
+    const pick = (a, b) => (a !== undefined && a !== null ? a : b);
+
+    const title = pick(txt?.title, pick(img?.title, extractTitleFromTranscript(fallbackText || 'Issue Report')));
+    const description = pick(txt?.description, pick(fallbackText, img?.description));
+
+    const imgConf = typeof img?.confidence === 'number' ? img.confidence : 0;
+    const txtConf = typeof txt?.confidence === 'number' ? txt.confidence : 0;
+
+    let category = img?.category || txt?.category || 'other';
+    if (txt?.category && img?.category && txt?.category !== img?.category) {
+      category = txtConf >= imgConf ? txt.category : img.category;
+    } else if (txt?.category) {
+      category = txt.category;
+    }
+
+    const confidence = Math.max(imgConf, txtConf || 0);
+
+    const imgSev = img?.severity || 'medium';
+    const txtSev = txt?.severity || imgSev;
+    const severity = severityRank[txtSev] >= severityRank[imgSev] ? txtSev : imgSev;
+
+    const priorityOrder = { low: 1, medium: 2, high: 3 };
+    const imgPr = img?.suggestedPriority || 'medium';
+    const txtPr = txt?.suggestedPriority || imgPr;
+    const suggestedPriority = (priorityOrder[txtPr] >= priorityOrder[imgPr]) ? txtPr : imgPr;
+
+    return { title, description, category, confidence, severity, suggestedPriority };
+  };
+
   const extractTitleFromTranscript = (text) => {
     // Simple title extraction - take first 50 characters
+    if (!text) return 'Issue Report';
     return text.length > 50 ? text.substring(0, 50) + '...' : text;
   };
 
@@ -356,25 +363,39 @@ const handleTextInput = async (text) => {
         return (
           <div className="agent-step">
             <h2>🤖 Agent Report Assistant</h2>
-            <p>Choose how you'd like to report the issue:</p>
-            <div className="input-options">
+            <p>Provide a photo and a brief text or voice description. I’ll infer the details for you.</p>
+
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ marginBottom: 8 }}>Photo</h4>
+              <ImageCapture 
+                onImageCapture={handleImageCapture}
+                disabled={isProcessing}
+              />
+            </div>
+
+            <div style={{ textAlign: 'left' }}>
+              <h4 style={{ margin: '16px 0 8px' }}>Description (text or voice)</h4>
+              <textarea
+                className="text-input"
+                placeholder="Describe the issue in a sentence or two..."
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                rows="3"
+              />
+              <div style={{ marginBottom: 12 }}>or</div>
+              <VoiceInput 
+                onTranscript={handleVoiceTranscript}
+                disabled={isProcessing}
+              />
+            </div>
+
+            <div style={{ marginTop: 20 }}>
               <button 
-                className="input-option" 
-                onClick={() => handleInputTypeSelect('image')}
+                className="btn-primary"
+                onClick={handleFirstStepContinue}
+                disabled={!imageFile || !(textInput.trim() || voiceTranscript.trim()) || isProcessing}
               >
-                📸 Take Photo
-              </button>
-              <button 
-                className="input-option" 
-                onClick={() => handleInputTypeSelect('voice')}
-              >
-                🎤 Voice Description
-              </button>
-              <button 
-                className="input-option" 
-                onClick={() => handleInputTypeSelect('text')}
-              >
-                ✏️ Type Description
+                {isProcessing ? 'Analyzing...' : 'Continue'}
               </button>
             </div>
           </div>
@@ -384,44 +405,7 @@ const handleTextInput = async (text) => {
         return (
           <div className="agent-step">
             <h2>📝 Provide Details</h2>
-            {inputType === 'image' && (
-              <div>
-                <p>Take a photo or upload an image of the issue:</p>
-                <ImageCapture 
-                  onImageCapture={handleImageCapture}
-                  disabled={isProcessing}
-                />
-                {isProcessing && <p>🔍 Analyzing image...</p>}
-              </div>
-            )}
-            {inputType === 'voice' && (
-              <div>
-                <p>Describe the issue using your voice:</p>
-                <VoiceInput 
-                  onTranscript={handleVoiceTranscript}
-                  disabled={isProcessing}
-                />
-              </div>
-            )}
-{inputType === 'text' && (
-              <div>
-                <p>Describe the issue in your own words:</p>
-                <textarea
-                  className="text-input"
-                  placeholder="Describe the issue you've encountered..."
-                  value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
-                  rows="4"
-                />
-                <button 
-                  className="btn-primary"
-                  onClick={() => handleTextInput(textInput)}
-                  disabled={!textInput.trim()}
-                >
-                  Continue
-                </button>
-              </div>
-            )}
+            <p>Continuing...</p>
           </div>
         );
 
@@ -584,7 +568,7 @@ const handleTextInput = async (text) => {
         {renderStep()}
       </div>
 
-      {currentStep < 6 && countdown > 0 && !isPaused && (
+      {currentStep < 6 && countdown > 0 && !isPaused && currentStep !== 1 && (
         <div className="countdown-timer">
           <span>Auto-advancing in {countdown}s</span>
         </div>
