@@ -1,306 +1,217 @@
-/* Voice Input Component Styles */
+/* VoiceInput.css */
+/* Styles for your advanced VoiceInput.jsx component */
+
+/* ============================================
+   1. MAIN CONTAINER & LAYOUT
+============================================ */
 .voice-input-container {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  width: 100%;
+  position: relative;
 }
 
 .voice-input-main {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
+/* ============================================
+   2. THE MAIN VOICE BUTTON
+============================================ */
 .voice-button {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 24px;
-    border: 2px solid #007bff;
-    border-radius: 50px;
-    background: #fff;
-    color: #007bff;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 200px;
-    justify-content: center;
+  /* Inherit from our theme's button style */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px; /* --radius-md */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+
+  /* Specific styles for this button */
+  background-color: #FFFFFF;
+  color: #374151;
+  border: 1px solid #E5E7EB; /* --border-color */
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); /* --shadow-sm */
 }
 
-.voice-button:hover:not(.disabled) {
-    background: #007bff;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
-}
-
-.voice-button.listening {
-    background: #dc3545;
-    border-color: #dc3545;
-    color: white;
-    animation: pulse 1.5s infinite;
+.voice-button:not(.disabled):hover {
+  border-color: #4F46E5; /* --primary-brand */
+  color: #4F46E5; /* --primary-brand */
+  background-color: #EEF2FF; /* --primary-light */
 }
 
 .voice-button.disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
+  background-color: #F3F4F6;
+  color: #9CA3AF;
+  cursor: not-allowed;
 }
 
-.voice-button.disabled:hover {
-    background: #fff;
-    color: #007bff;
-    transform: none;
-    box-shadow: none;
-}
-
-@keyframes pulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-    }
+/* Style for when the microphone is active */
+.voice-button.listening {
+  background-color: #4F46E5; /* --primary-brand */
+  color: #FFFFFF;
+  border-color: #4F46E5; /* --primary-brand */
+  box-shadow: 0 0 0 3px #EEF2FF, /* --primary-light */
+              0 4px 6px -1px rgb(0 0 0 / 0.1); /* --shadow-md */
 }
 
 .voice-icon {
-    font-size: 20px;
+  font-size: 1.25rem; /* Make emoji icon slightly larger */
 }
 
-.voice-text {
-    font-size: 16px;
-}
 
+/* ============================================
+   3. TRANSCRIPT PREVIEW
+============================================ */
 .transcript-container {
-    width: 100%;
-    max-width: 500px;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 12px;
-    padding: 16px;
-    position: relative;
-    min-height: 60px;
-    display: flex;
-    align-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: #F9FAFB; /* --bg-light */
+  border: 1px solid #E5E7EB; /* --border-color */
+  border-radius: 8px; /* --radius-md */
 }
 
 .transcript-text {
-    flex: 1;
-    font-size: 16px;
-    color: #2c3e50;
-    line-height: 1.5;
-    padding-right: 40px;
+  flex-grow: 1;
+  font-style: italic;
+  color: #111827; /* --text-primary */
 }
 
 .clear-button {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.2s ease;
+  background: none;
+  border: 1px solid transparent;
+  color: #9CA3AF;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s;
 }
 
 .clear-button:hover {
-    background: #c82333;
-    transform: scale(1.1);
+  color: #EF4444;
+  background-color: #FEE2E2;
 }
 
+/* ============================================
+   4. ERROR MESSAGES
+============================================ */
 .voice-error {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px 16px;
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-    border-radius: 8px;
-    font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: #FEF2F2; /* Soft red background */
+  border: 1px solid #F87171; /* Red border */
+  border-radius: 8px; /* --radius-md */
+  color: #B91C1C; /* Dark red text */
 }
 
-.voice-error > div:first-child {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.voice-error span {
-    font-size: 16px;
-}
-
-.retry-button {
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    align-self: flex-start;
-}
-
-.retry-button:hover {
-    background: #c82333;
-    transform: scale(1.05);
+.voice-error p {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .error-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
 }
 
-.fallback-button {
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+.retry-button, .fallback-button {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #FCA5A5;
+  background-color: #FFFFFF;
+  color: #B91C1C;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.fallback-button:hover {
-    background: #5a6268;
-    transform: scale(1.05);
+.retry-button:hover, .fallback-button:hover {
+  background-color: #FEE2E2;
 }
 
-/* Text fallback styles */
+/* ============================================
+   5. TEXT FALLBACK INPUT
+============================================ */
 .text-fallback {
-    margin-top: 16px;
-    padding: 16px;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.text-input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ced4da;
-    border-radius: 6px;
-    font-size: 14px;
-    font-family: inherit;
-    resize: vertical;
-    margin-bottom: 12px;
+.text-fallback textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid #E5E7EB; /* --border-color */
+  border-radius: 8px; /* --radius-md */
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); /* --shadow-sm */
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.text-input:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+.text-fallback textarea:focus {
+  outline: none;
+  border-color: #4F46E5; /* --primary-brand */
+  box-shadow: 0 0 0 3px #EEF2FF; /* --primary-light */
 }
 
 .text-fallback-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.submit-text-button, .cancel-text-button {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .submit-text-button {
-    background: #28a745;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  background-color: #10B981; /* --success-color */
+  color: #FFFFFF;
+  border-color: #10B981;
 }
-
-.submit-text-button:hover:not(:disabled) {
-    background: #218838;
-    transform: scale(1.05);
-}
-
 .submit-text-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
+  background-color: #D1D5DB;
+  border-color: #D1D5DB;
+  cursor: not-allowed;
 }
 
 .cancel-text-button {
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  background-color: #FFFFFF;
+  color: #6B7280; /* --text-secondary */
+  border-color: #E5E7EB; /* --border-color */
+}
+.cancel-text-button:hover {
+  background-color: #F9FAFB; /* --bg-light */
 }
 
-.cancel-text-button:hover {
-    background: #c82333;
-    transform: scale(1.05);
-}
+/* Add this to the end of VoiceInput.css */
 
 .voice-placeholder {
-    text-align: center;
-    color: #6c757d;
-    font-size: 14px;
-    font-style: italic;
-}
-
-.voice-input-error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 20px;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 12px;
-    color: #6c757d;
-}
-
-.voice-input-error span {
-    font-size: 24px;
-}
-
-.voice-input-error p {
-    margin: 0;
-    font-size: 14px;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .voice-button {
-        min-width: 160px;
-        padding: 14px 20px;
-        font-size: 14px;
-    }
-    
-    .transcript-container {
-        padding: 12px;
-        min-height: 50px;
-    }
-    
-    .transcript-text {
-        font-size: 14px;
-        padding-right: 35px;
-    }
-    
-    .clear-button {
-        width: 20px;
-        height: 20px;
-        font-size: 10px;
-    }
+  display: none; /* Hides the redundant placeholder text */
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-
+import './VoiceInput.css';
 const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Tap to speak..." }) => {
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState('');

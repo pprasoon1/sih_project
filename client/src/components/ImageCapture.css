@@ -1,0 +1,84 @@
+/* ImageCapture.css */
+
+/*
+  This stylesheet is specifically for YOUR ImageCapture.jsx component.
+  It styles the .capture-options buttons and the .preview-container.
+*/
+
+/* Main container */
+.image-capture {
+  width: 100%;
+}
+
+/* 1. Styles for the initial buttons ("Take Photo", "Choose File") */
+.capture-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.capture-btn {
+  /* Inherit styles from our main button, but with specific tweaks */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-radius: 8px; /* --radius-md */
+  cursor: pointer;
+  transition: all 0.2s;
+
+  /* Specific styles for these buttons */
+  background-color: #F9FAFB; /* --bg-light */
+  border: 1px solid #E5E7EB; /* --border-color */
+  color: #374151;
+}
+
+.capture-btn:hover:not(:disabled) {
+  border-color: #4F46E5; /* --primary-brand */
+  color: #4F46E5; /* --primary-brand */
+  background-color: #EEF2FF; /* --primary-light */
+}
+
+.capture-btn:disabled {
+  background-color: #F3F4F6;
+  color: #9CA3AF;
+  cursor: not-allowed;
+}
+
+/* 2. Styles for the image preview after an image is selected */
+.preview-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background-color: #F9FAFB; /* --bg-light */
+  border-radius: 8px; /* --radius-md */
+  border: 1px solid #E5E7EB; /* --border-color */
+}
+
+.image-preview {
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.clear-image-btn {
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6B7280; /* --text-secondary */
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.clear-image-btn:hover {
+  color: #EF4444; /* A standard red for removal actions */
+  background-color: #FEE2E2;
+}
