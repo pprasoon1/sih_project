@@ -1,192 +1,385 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import API from "../api/axios";
+import './AuthPage.css';
 
 const Signup = () => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
+  });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    password: false,
+    confirmPassword: false
+  });
   const navigate = useNavigate();
+
+  // Real-time validation
+  const validateField = (name, value) => {
+    const newErrors = { ...errors };
+
+    switch (name) {
+      case 'name':
+        if (!value.trim()) {
+          newErrors.name = "Name is required";
+        } else if (value.trim().length < 2) {
+          newErrors.name = "Name must be at least 2 characters";
+        } else {
+          delete newErrors.name;
+        }
+        break;
+
+      case 'email':
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!value) {
+          newErrors.email = "Email is required";
+        } else if (!emailRegex.test(value)) {
+          newErrors.email = "Please enter a valid email address";
+        } else {
+          delete newErrors.email;
+        }
+        break;
+
+      case 'password':
+        if (!value) {
+          newErrors.password = "Password is required";
+        } else if (value.length < 8) {
+          newErrors.password = "Password must be at least 8 characters";
+        } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value)) {
+          newErrors.password = "Password must contain uppercase, lowercase, and a number";
+        } else {
+          delete newErrors.password;
+        }
+        
+        // Re-validate confirm password if it exists
+        if (formData.confirmPassword && value !== formData.confirmPassword) {
+          newErrors.confirmPassword = "Passwords do not match";
+        } else if (formData.confirmPassword) {
+          delete newErrors.confirmPassword;
+        }
+        break;
+
+      case 'confirmPassword':
+        if (!value) {
+          newErrors.confirmPassword = "Please confirm your password";
+        } else if (value !== formData.password) {
+          newErrors.confirmPassword = "Passwords do not match";
+        } else {
+          delete newErrors.confirmPassword;
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    setErrors(newErrors);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Validate field on change
+    validateField(name, value);
+  };
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
+  const getPasswordStrength = (password) => {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[^a-zA-Z\d]/.test(password)) strength++;
+    
+    return strength;
+  };
+
+  const getPasswordStrengthText = (strength) => {
+    switch (strength) {
+      case 0:
+      case 1: return { text: "Very Weak", class: "very-weak" };
+      case 2: return { text: "Weak", class: "weak" };
+      case 3: return { text: "Fair", class: "fair" };
+      case 4: return { text: "Good", class: "good" };
+      case 5: return { text: "Strong", class: "strong" };
+      default: return { text: "", class: "" };
+    }
+  };
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      setLoading(false);
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      setLoading(false);
-      return;
-    }
     
+    if (loading) return;
+
+    // Validate all fields before submission
+    Object.keys(formData).forEach(key => {
+      validateField(key, formData[key]);
+    });
+
+    // Check if there are any errors
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      await API.post("/auth/signup", { name, email, password });
-      navigate("/login");
+      await API.post("/auth/signup", {
+        name: formData.name.trim(),
+        email: formData.email.toLowerCase().trim(),
+        password: formData.password
+      });
+      
+      // Success notification could be added here
+      navigate("/login", { 
+        state: { message: "Account created successfully! Please log in." }
+      });
     } catch (err) {
-      setError(err.response?.data?.message || "Signup failed");
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          "An error occurred during signup. Please try again.";
+      setErrors({ submit: errorMessage });
     } finally {
       setLoading(false);
     }
   };
 
+  const passwordStrength = getPasswordStrength(formData.password);
+  const strengthInfo = getPasswordStrengthText(passwordStrength);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo/Brand */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+    <div className="auth-page-container">
+      {/* Left Visual Panel */}
+      <div className="auth-visual-panel">
+        <div className="visual-panel-content">
+          <div className="logo">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="logo-icon">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
+            CivicVoice
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-          <p className="text-gray-600">Join our community and make a difference</p>
-        </div>
-
-        {/* Signup Form */}
-        <div className="card">
-          <div className="card-body">
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex">
-                  <svg className="w-5 h-5 text-red-400 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                  <div>
-                    <h3 className="text-sm font-medium text-red-800">Error</h3>
-                    <p className="text-sm text-red-700 mt-1">{error}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <form onSubmit={handleSignup} className="space-y-6">
-              <div className="form-group">
-                <label htmlFor="name" className="form-label">Full Name</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="form-input pl-10"
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="email" className="form-label">Email Address</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                    </svg>
-                  </div>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="form-input pl-10"
-                    placeholder="Enter your email"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="password" className="form-label">Password</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  </div>
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="form-input pl-10"
-                    placeholder="Create a password"
-                    required
-                  />
-                </div>
-                <p className="mt-2 text-xs text-gray-500">Must be at least 6 characters long</p>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="form-input pl-10"
-                    placeholder="Confirm your password"
-                    required
-                  />
-                </div>
-              </div>
-
-              <button 
-                type="submit" 
-                className="btn btn-primary btn-full btn-lg"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <div className="spinner"></div>
-                    Creating account...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
-                    Create Account
-                  </>
-                )}
-              </button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Already have an account?{" "}
-                <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
-                  Sign in here
-                </Link>
-              </p>
+          <h2>Join a community of changemakers.</h2>
+          <p>Report issues, track progress, and see the real impact you're making in your neighborhood.</p>
+          
+          <div className="features-list">
+            <div className="feature-item">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span>Report local issues instantly</span>
+            </div>
+            <div className="feature-item">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span>Track resolution progress</span>
+            </div>
+            <div className="feature-item">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span>Connect with neighbors</span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Footer */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">
-            By creating an account, you agree to our Terms of Service and Privacy Policy
+      {/* Right Form Panel */}
+      <div className="auth-form-panel">
+        <div className="form-container">
+          <div className="form-header">
+            <h1>Create Your Account</h1>
+            <p>Already have an account? <Link to="/login">Sign in here</Link></p>
+          </div>
+
+          {errors.submit && (
+            <div className="error-banner" role="alert">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clipRule="evenodd" />
+              </svg>
+              <span>{errors.submit}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSignup} className="auth-form" noValidate>
+            <div className="form-group">
+              <label htmlFor="name">Full Name</label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={handleInputChange}
+                placeholder="Enter your full name"
+                className={errors.name ? 'error' : ''}
+                aria-describedby={errors.name ? "name-error" : undefined}
+                required
+              />
+              {errors.name && (
+                <span id="name-error" className="field-error" role="alert">
+                  {errors.name}
+                </span>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="email">Email Address</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="you@example.com"
+                className={errors.email ? 'error' : ''}
+                aria-describedby={errors.email ? "email-error" : undefined}
+                required
+              />
+              {errors.email && (
+                <span id="email-error" className="field-error" role="alert">
+                  {errors.email}
+                </span>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <div className="password-input-container">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPasswords.password ? "text" : "password"}
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="Create a strong password"
+                  className={errors.password ? 'error' : ''}
+                  aria-describedby={errors.password ? "password-error" : "password-help"}
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => togglePasswordVisibility('password')}
+                  aria-label={showPasswords.password ? "Hide password" : "Show password"}
+                >
+                  {showPasswords.password ? (
+                    <svg viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
+                      <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              
+              {formData.password && (
+                <div className="password-strength">
+                  <div className="strength-bars">
+                    {[...Array(5)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`strength-bar ${i < passwordStrength ? strengthInfo.class : ''}`}
+                      />
+                    ))}
+                  </div>
+                  <span className={`strength-text ${strengthInfo.class}`}>
+                    {strengthInfo.text}
+                  </span>
+                </div>
+              )}
+              
+              {errors.password && (
+                <span id="password-error" className="field-error" role="alert">
+                  {errors.password}
+                </span>
+              )}
+              
+              {!errors.password && (
+                <span id="password-help" className="field-help">
+                  Must contain uppercase, lowercase, and a number (8+ characters)
+                </span>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="confirmPassword">Confirm Password</label>
+              <div className="password-input-container">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showPasswords.confirmPassword ? "text" : "password"}
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  placeholder="Confirm your password"
+                  className={errors.confirmPassword ? 'error' : ''}
+                  aria-describedby={errors.confirmPassword ? "confirm-password-error" : undefined}
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => togglePasswordVisibility('confirmPassword')}
+                  aria-label={showPasswords.confirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showPasswords.confirmPassword ? (
+                    <svg viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
+                      <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <span id="confirm-password-error" className="field-error" role="alert">
+                  {errors.confirmPassword}
+                </span>
+              )}
+            </div>
+
+            <button 
+              type="submit" 
+              className="btn-submit" 
+              disabled={loading || Object.keys(errors).length > 0}
+            >
+              {loading ? (
+                <>
+                  <div className="spinner" aria-hidden="true"></div>
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+          </form>
+
+          <p className="form-footer-text">
+            By creating an account, you agree to our{' '}
+            <Link to="/terms">Terms of Service</Link> and{' '}
+            <Link to="/privacy">Privacy Policy</Link>.
           </p>
         </div>
       </div>
