@@ -1,14 +1,15 @@
 import express from "express";
 import multer from "multer";
 import {
-    createReport,
     getMyReports,
     getReportsNearby,
     getReportsForFeed,
+    getTrendingReports,
     toggleUpvote,
     addComment,
     getComments,
 } from "../controllers/reportController.js";
+import { createReport as createReportEnhanced } from "../controllers/enhancedReportController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -26,13 +27,14 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // --- Routes ---
-router.post("/", protect, upload.array("media", 5), createReport);
+router.post("/", protect, upload.array("media", 5), createReportEnhanced);
 // 🔹 Accepts up to 5 files under key "media"
 
 router.get("/my", protect, getMyReports);
 router.get("/nearby", protect, getReportsNearby);
 
 router.get("/feed", protect, getReportsForFeed);
+router.get("/trending", protect, getTrendingReports);
 router.post("/:id/upvote", protect, toggleUpvote);
 router.post("/:id/comments", protect, addComment);
 router.get("/:id/comments", protect, getComments);

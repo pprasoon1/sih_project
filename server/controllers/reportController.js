@@ -126,27 +126,68 @@ export const getReportsNearby = async (req, res) => {
 
 export const getReportsForFeed = async (req, res) => {
   try {
-    const { lng, lat, radius = 20000, category } = req.query; // Default radius of 5km
+    const { lng, lat, radius = 20000, category } = req.query; // Default radius of 20km
     
     const filter = {};
     if (category) filter.category = category;
 
-    const reports = await Report.find({
-      ...filter,
-      location: {
-        $near: {
-          $geometry: { type: "Point", coordinates: [lng, lat] },
-          $maxDistance: parseInt(radius),
-        },
-      },
-    })
-    .populate('reporterId', 'name')
-    .sort({ upvoteCount: -1, createdAt: -1 }) // Prioritize by upvotes, then recency
-    .limit(50);
+    let reports;
+
+    const hasLngLat = lng !== undefined && lat !== undefined && lng !== '' && lat !== '';
+    if (hasLngLat) {
+      const lngNum = parseFloat(lng);
+      const latNum = parseFloat(lat);
+      const radiusNum = parseInt(radius, 10) || 20000;
+
+      if (Number.isFinite(lngNum) && Number.isFinite(latNum)) {
+        // Location-based feed
+        reports = await Report.find({
+          ...filter,
+          location: {
+            $near: {
+              $geometry: { type: "Point", coordinates: [lngNum, latNum] },
+              $maxDistance: radiusNum,
+            },
+          },
+        })
+          .populate('reporterId', 'name')
+          .sort({ upvoteCount: -1, createdAt: -1 })
+          .limit(50);
+      }
+    }
+
+    // Fallback: trending/recent feed (no or invalid coordinates)
+    if (!reports) {
+      reports = await Report.find({
+        ...filter,
+      })
+        .populate('reporterId', 'name')
+        .sort({ upvoteCount: -1, createdAt: -1 })
+        .limit(50);
+    }
 
     res.json(reports);
   } catch (error) {
-    res.status(500).json({ message: `Error fetching report feedddd.${error.message}` });
+    console.error("Error in getReportsForFeed:", error);
+    res.status(500).json({ message: `Error fetching report feed. ${error.message}` });
+  }
+};
+
+export const getTrendingReports = async (req, res) => {
+  try {
+    const { category } = req.query;
+    const filter = {};
+    if (category) filter.category = category;
+
+    const reports = await Report.find(filter)
+      .populate('reporterId', 'name')
+      .sort({ upvoteCount: -1, createdAt: -1 })
+      .limit(50);
+
+    res.json(reports);
+  } catch (error) {
+    console.error('Error in getTrendingReports:', error);
+    res.status(500).json({ message: 'Error fetching trending reports.' });
   }
 };
 

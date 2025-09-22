@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from '../api/axios.jsx';
 import CommentModal from '../components/CommentModal';
 import ReportCard from '../components/ReportCard'; // Import the refactored card
 import './FeedPage.css'; // Import the new CSS
@@ -13,6 +13,7 @@ const FeedPage = () => {
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
+<<<<<<< HEAD
     const fetchReports = async () => {
       setLoading(true);
       setError(null);
@@ -41,6 +42,62 @@ const FeedPage = () => {
       } catch (apiError) {
         console.error("Failed to fetch feed", apiError);
         setError('Failed to load the community feed. Please try again later.');
+=======
+    const getPosition = (opts = {}) => new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject(new Error('Geolocation unsupported'));
+      let timeoutId;
+      const success = (pos) => { clearTimeout(timeoutId); resolve(pos); };
+      const failure = (err) => { clearTimeout(timeoutId); reject(err); };
+      timeoutId = setTimeout(() => failure(new Error('Geolocation timeout')), 6000);
+      navigator.geolocation.getCurrentPosition(success, failure, { timeout: 5000, ...opts });
+    });
+
+    const fetchReports = async () => {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please log in to view the community feed');
+        setLoading(false);
+        return;
+      }
+
+      let coords = null;
+      try {
+        const position = await getPosition();
+        coords = { lng: position.coords.longitude, lat: position.coords.latitude };
+      } catch (geoErr) {
+        // Proceed without coords
+      }
+
+      try {
+        if (coords) {
+          const res = await API.get(`/reports/feed?lng=${coords.lng}&lat=${coords.lat}`);
+          setReports(res.data);
+        } else {
+          const res = await API.get('/reports/feed');
+          setReports(res.data);
+        }
+      } catch (e1) {
+        try {
+          if (coords) {
+            const res2 = await API.get(`/reports/nearby?lng=${coords.lng}&lat=${coords.lat}`);
+            setReports(res2.data);
+          } else {
+            const res2 = await API.get('/reports/trending');
+            setReports(res2.data);
+          }
+        } catch (e2) {
+          try {
+            const res3 = await API.get('/reports/trending');
+            setReports(Array.isArray(res3.data) ? res3.data : []);
+          } catch (e3) {
+            console.error('All feed attempts failed', e3);
+            setError('Failed to load the community feed. Please try again later.');
+          }
+        }
+>>>>>>> fd85d62 (yyy)
       } finally {
         setLoading(false);
       }
@@ -50,14 +107,19 @@ const FeedPage = () => {
   }, []);
 
   const handleUpvote = async (reportId) => {
-    const token = localStorage.getItem('token');
     try {
+<<<<<<< HEAD
       const res = await axios.post(
         `https://backend-sih-project-l67a.onrender.com/api/reports/${reportId}/upvote`, {}, { headers: { Authorization: `Bearer ${token}` } }
+=======
+      const res = await API.post(`/reports/${reportId}/upvote`);
+      setReports(prevReports => 
+        prevReports.map(report => report._id === reportId ? res.data : report)
+>>>>>>> fd85d62 (yyy)
       );
       setReports(prev => prev.map(r => r._id === reportId ? res.data : r));
     } catch (error) {
-      console.error("Upvote failed", error);
+      console.error('Upvote failed', error);
     }
   };
 
@@ -73,7 +135,16 @@ const FeedPage = () => {
 
   const filteredReports = reports.filter(report => {
     if (filter === 'all') return true;
-    return report.status === filter;
+    if (filter === 'pending') {
+      return ['new', 'acknowledged'].includes(report.status);
+    }
+    if (filter === 'in-progress') {
+      return report.status === 'in_progress';
+    }
+    if (filter === 'resolved') {
+      return report.status === 'resolved';
+    }
+    return true;
   });
 
   const renderContent = () => {
